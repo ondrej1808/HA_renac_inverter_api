@@ -1,0 +1,15 @@
+# A throwaway, completely empty Home Assistant instance (no accounts, no
+# integrations, no RENAC credentials) with HACS pre-installed, meant for
+# taking clean screenshots of the "add via HACS custom repository" flow
+# documented in README.md §0 -- not for testing against a real account.
+#
+# Usage: docker compose -f docker-compose.clean.yml up -d
+services:
+  homeassistant-clean:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./docker/ha_config_clean:/config
+    ports:
+      - "18125:8123"
+    environment:
+      - TZ=Europe/Prague

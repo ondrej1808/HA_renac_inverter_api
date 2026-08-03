@@ -31,3 +31,7 @@ Thumbs.db
 # Local tooling metadata, not part of the deliverable
 .megamemory/
 
+
+# Same for the clean HACS-screenshot instance (docker-compose.clean.yml).
+docker/ha_config_clean/*
+!docker/ha_config_clean/configuration.yaml
