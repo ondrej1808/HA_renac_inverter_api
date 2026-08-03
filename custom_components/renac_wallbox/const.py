@@ -121,7 +121,7 @@ CONF_STATION_ID = "station_id"
 CONF_STATION_NAME = "station_name"
 CONF_INV_SN = "inv_sn"
 
-DEFAULT_SCAN_INTERVAL = timedelta(seconds=30)
+DEFAULT_SCAN_INTERVAL = timedelta(seconds=10)
 # Settings (basic/fast/pv/off-peak) change far less often than telemetry
 # and are unconfirmed-write endpoints -- poll them gently.
 SETTINGS_SCAN_INTERVAL = timedelta(seconds=300)

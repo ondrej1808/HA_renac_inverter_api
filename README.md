@@ -86,7 +86,7 @@ This repository is a valid **HACS custom repository** (see [`hacs.json`](hacs.js
 3. If that station has more than one device, pick a serial number (auto-detected in the vast majority of cases).
 4. Entities are created under one device per `inv_sn`.
 
-Polling interval defaults to 30s and can be changed afterwards via the integration's **Configure** (options flow), 10–3600s.
+Polling interval defaults to 10s and can be changed afterwards -- either as a `number.*_polling_interval` entity, or via the integration's **Configure** (options flow), 10–3600s.
 
 **Read-only sensors** (confirmed against real hardware): power (W), voltage (V), current (A), total energy (kWh), session energy (kWh), total cost, session cost, session duration, state (`idle`/`plugged_in`/`charging`/`fault`), phase (`single_phase`/`three_phase`), max power limit, PV minimum solar power threshold (diagnostic), plus a `problem` binary sensor for fault state.
 
@@ -191,7 +191,7 @@ Tento repozitář je platný **vlastní (custom) repozitář HACS** (viz [`hacs.
 3. Pokud má daná stanice více zařízení, vyberte sériové číslo (ve valné většině případů se detekuje automaticky).
 4. Entity se vytvoří pod jedním zařízením na `inv_sn`.
 
-Výchozí interval dotazování je 30 s, lze změnit později přes **Konfigurovat** u integrace (options flow), v rozsahu 10–3600 s.
+Výchozí interval dotazování je 10 s, lze změnit později — buď přímo entitou `number.*_polling_interval`, nebo přes **Konfigurovat** u integrace (options flow), v rozsahu 10–3600 s.
 
 **Pouze ke čtení senzory** (ověřeno na reálném hardwaru): výkon (W), napětí (V), proud (A), celková energie (kWh), energie relace (kWh), celkové náklady, náklady relace, doba trvání relace, stav (`idle`/`plugged_in`/`charging`/`fault`), fáze (`single_phase`/`three_phase`), limit max. výkonu, PV práh minimálního solárního výkonu (diagnostický), plus binární senzor `problem` pro stav poruchy.
 
