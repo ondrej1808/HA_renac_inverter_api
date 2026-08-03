@@ -3,7 +3,7 @@
 The API is not publicly documented. Every endpoint and field name used
 here was reverse engineered from the minified Vue.js web app served at
 https://seceu.renacpower.com, cross-checked against a real captured
-HTTP session (HAR) for a RENAC AC wallbox. See README.md for the full
+HTTP session (HAR) for a RENAC AC wallbox. See docs/API.md for the full
 writeup of what is confirmed vs. inferred.
 
 Auth scheme (confirmed from the axios request interceptor):
@@ -201,7 +201,7 @@ class RenacApiClient:
         CONFIRMED live (2026-08-03): the SPA's `getPileIndex()` calls
         `d["n"]`, and static analysis of the minified charging-api module
         shows export "n" is bound to a helper posting to `bg/equList`
-        (earlier README revisions incorrectly assumed this was
+        (earlier revisions of this project incorrectly assumed this was
         `api/charging/index` with different params -- that guess was
         tested live and returns `{"code": 1, "data": null}`, i.e. no
         device list; `bg/equList` is the corrected endpoint).
@@ -233,7 +233,7 @@ class RenacApiClient:
             pv: {import_grid, min_solar_power, boost, manual_energy,
                  start_time, stop_time, auto_time, auto_energy,
                  last_operated_time}
-        See README.md for the full confirmed field reference and the
+        See docs/API.md for the full confirmed field reference and the
         state2 / mode enum meanings.
         """
         return await self._request("api/charging/index", {"inv_sn": inv_sn})

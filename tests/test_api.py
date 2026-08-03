@@ -105,7 +105,7 @@ async def test_get_wallbox_status_parses_real_shape(server):
     await api.async_login()
     status = await api.async_get_wallbox_status("ABC0123456DEF789")
 
-    # Field-for-field against the real captured session (README §2.4).
+    # Field-for-field against the real captured session (docs/API.md §2.4).
     assert status["charger_power"] == 0
     assert status["charger_vol"] == 236.5
     assert status["charger_total_energy"] == 3244.1
