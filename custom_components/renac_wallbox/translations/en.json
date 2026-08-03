@@ -76,6 +76,7 @@
     },
     "number": {
       "max_current_setting": { "name": "Max current limit" },
+      "polling_interval": { "name": "Polling interval" },
       "protect_temp": { "name": "Protect temperature" },
       "meter_address": { "name": "Meter address" },
       "pv_min_solar_power_setting": { "name": "PV min. solar power" },

@@ -76,6 +76,7 @@
     },
     "number": {
       "max_current_setting": { "name": "Limit max. proudu" },
+      "polling_interval": { "name": "Interval obnovení" },
       "protect_temp": { "name": "Ochranná teplota" },
       "meter_address": { "name": "Adresa elektroměru" },
       "pv_min_solar_power_setting": { "name": "PV min. solární výkon" },

@@ -12,11 +12,18 @@ the read-only sensors until exercised against a real account.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Any, Callable
 
 from homeassistant.components.number import NumberEntity, NumberEntityDescription, NumberMode
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory, UnitOfElectricCurrent, UnitOfPower, UnitOfTemperature
+from homeassistant.const import (
+    EntityCategory,
+    UnitOfElectricCurrent,
+    UnitOfPower,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -44,11 +51,60 @@ async def async_setup_entry(
     coordinator: RenacWallboxCoordinator = entry_data["coordinator"]
     settings: RenacSettingsCoordinator = entry_data["settings"]
 
-    entities: list[NumberEntity] = [RenacMaxCurrentNumber(coordinator, entry)]
+    entities: list[NumberEntity] = [
+        RenacMaxCurrentNumber(coordinator, entry),
+        RenacPollingIntervalNumber(coordinator, entry),
+    ]
     entities.extend(
         RenacSettingsNumber(settings, entry, desc) for desc in SETTINGS_NUMBER_DESCRIPTIONS
     )
     async_add_entities(entities)
+
+
+class RenacPollingIntervalNumber(CoordinatorEntity[RenacWallboxCoordinator], NumberEntity):
+    """How often (seconds) the realtime coordinator polls api/charging/index.
+
+    Purely a local Home Assistant setting -- never sent to the RENAC
+    cloud. Equivalent to the integration's Configure (options flow)
+    "Polling interval" field, exposed here as an entity so it's visible
+    and adjustable directly from the device page. Takes effect from the
+    next scheduled poll (HA's DataUpdateCoordinator re-reads
+    `update_interval` each time it reschedules itself) and is persisted
+    to the config entry's options so it survives a restart.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "polling_interval"
+    _attr_native_min_value = 10
+    _attr_native_max_value = 3600
+    _attr_native_step = 10
+    _attr_native_unit_of_measurement = UnitOfTime.SECONDS
+    _attr_mode = NumberMode.BOX
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: RenacWallboxCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{coordinator.inv_sn}_polling_interval"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.inv_sn)},
+            name=entry.data.get(CONF_STATION_NAME, coordinator.inv_sn),
+            manufacturer="RENAC",
+            model="AC Wallbox",
+            serial_number=coordinator.inv_sn,
+        )
+
+    @property
+    def native_value(self) -> float:
+        return self.coordinator.update_interval.total_seconds()
+
+    async def async_set_native_value(self, value: float) -> None:
+        seconds = int(value)
+        self.coordinator.update_interval = timedelta(seconds=seconds)
+        self.hass.config_entries.async_update_entry(
+            self._entry, options={**self._entry.options, "scan_interval_seconds": seconds}
+        )
+        self.async_write_ha_state()
 
 
 class RenacMaxCurrentNumber(CoordinatorEntity[RenacWallboxCoordinator], NumberEntity):
