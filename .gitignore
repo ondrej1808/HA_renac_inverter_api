@@ -16,6 +16,13 @@ __pycache__/
 docker/ha_config/*
 !docker/ha_config/configuration.yaml
 
+# Same for the live-account test instance (docker-compose.live.yml).
+# CRITICAL: .storage/core.config_entries under here contains real RENAC
+# credentials in plaintext once a config entry is created -- never track
+# anything in this directory except the authored configuration.yaml.
+docker/ha_config_live/*
+!docker/ha_config_live/configuration.yaml
+
 
 # OS / editor cruft
 .DS_Store

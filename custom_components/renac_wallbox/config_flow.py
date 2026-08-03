@@ -52,6 +52,7 @@ class RenacWallboxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._stations: list[dict[str, Any]] = []
         self._chosen_station: dict[str, Any] | None = None
         self._devices: list[dict[str, Any]] = []
+        self._devices_fetched = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -116,30 +117,37 @@ class RenacWallboxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         station_id = self._chosen_station["station_id"]
 
-        if not self._devices:
+        if not self._devices_fetched:
             try:
                 self._devices = await self._client.async_get_station_devices(
                     self._client.user_id, station_id
                 )
             except RenacApiError:
                 errors["base"] = "cannot_connect"
-
-        if not errors and len(self._devices) <= 1:
-            inv_sn = (
-                self._devices[0]["INV_SN"]
-                if self._devices
-                else self._chosen_station.get("equ_sn")
-            )
-            if not inv_sn:
-                errors["base"] = "no_devices_found"
             else:
-                return self._create_entry(inv_sn)
+                self._devices_fetched = True
+
+        if not errors and len(self._devices) == 1:
+            return self._create_entry(self._devices[0]["INV_SN"])
 
         if user_input is not None:
-            return self._create_entry(user_input["inv_sn"])
+            inv_sn = user_input.get("inv_sn")
+            if inv_sn:
+                return self._create_entry(inv_sn)
+            errors["base"] = "no_devices_found"
 
-        options = {d["INV_SN"]: d.get("INV_SN") for d in self._devices}
-        schema = vol.Schema({vol.Required("inv_sn"): vol.In(options)})
+        if self._devices:
+            # More than one device on this station: pick from a list.
+            options = {d["INV_SN"]: d["INV_SN"] for d in self._devices}
+            schema = vol.Schema({vol.Required("inv_sn"): vol.In(options)})
+        else:
+            # bg/equList returned nothing usable -- let the user type the
+            # serial number in manually (visible on the RENAC portal's
+            # station/device detail page, or on the wallbox itself).
+            if not errors:
+                errors["base"] = "no_devices_found"
+            schema = vol.Schema({vol.Required("inv_sn"): str})
+
         return self.async_show_form(
             step_id="device", data_schema=schema, errors=errors
         )

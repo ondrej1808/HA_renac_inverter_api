@@ -1,0 +1,24 @@
+# Runs a throwaway, isolated Home Assistant instance in Docker with
+# custom_components/renac_wallbox mounted in exactly as HACS would
+# install it, talking to the REAL RENAC cloud (the confirmed Europe
+# base URL is the config-flow default).
+#
+# IMPORTANT: this stack does not accept or transmit your RENAC email/
+# password anywhere except directly from your own browser into this
+# local Home Assistant instance's own config-flow form, which then
+# talks to https://europe.renacpower.com:8084 over HTTPS -- exactly
+# like the official web portal. Nothing here types, stores, logs, or
+# forwards your credentials on your behalf.
+#
+# Usage: docker compose -f docker-compose.live.yml up -d
+# Then open http://localhost:18123 yourself and finish setup there.
+services:
+  homeassistant-live:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./docker/ha_config_live:/config
+      - ./custom_components/renac_wallbox:/config/custom_components/renac_wallbox:ro
+    ports:
+      - "18123:8123"
+    environment:
+      - TZ=Europe/Prague

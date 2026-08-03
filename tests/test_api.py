@@ -45,6 +45,7 @@ class FakeRenacServer:
         self.app.router.add_post("/api/user/login", self.login)
         self.app.router.add_post("/api/station/list", self.station_list)
         self.app.router.add_post("/api/charging/index", self.charging_index)
+        self.app.router.add_post("/bg/equList", self.equ_list)
         self.app.router.add_post("/api/station/equipStat", self.equip_stat)
 
     async def _check_signature(self, request: web.Request) -> None:
@@ -70,6 +71,13 @@ class FakeRenacServer:
         self.received_paths.append(request.path)
         await self._check_signature(request)
         return web.json_response(load_fixture("charging_index.json"))
+
+    async def equ_list(self, request: web.Request) -> web.Response:
+        self.received_paths.append(request.path)
+        await self._check_signature(request)
+        return web.json_response(
+            {"code": 1, "msg": "0000", "data": {"total": 1, "list": [{"INV_SN": "ABC0123456DEF789"}]}}
+        )
 
     async def equip_stat(self, request: web.Request) -> web.Response:
         self.received_paths.append(request.path)
@@ -123,6 +131,18 @@ async def test_get_equip_stat(server):
     stat = await api.async_get_equip_stat(user_id, 200001)
     assert stat["total_online_equip"] == 1
     assert stat["total_alarm_equip"] == 0
+
+
+async def test_get_station_devices_uses_bg_equlist(server):
+    """Regression test: this used to incorrectly call api/charging/index
+    with a {station_id, user_id, ...} body, which the real API accepts
+    but answers with `data: null` -- confirmed against a live account.
+    The correct endpoint is bg/equList."""
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    user_id = await api.async_login()
+    devices = await api.async_get_station_devices(user_id, 200001)
+    assert devices == [{"INV_SN": "ABC0123456DEF789"}]
+    assert "/bg/equList" in server.fake.received_paths
 
 
 async def test_requests_are_actually_signed(server):

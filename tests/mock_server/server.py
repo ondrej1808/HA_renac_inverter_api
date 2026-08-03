@@ -61,9 +61,13 @@ async def charging_index(request: web.Request) -> web.Response:
         return err
     body = await request.json()
     _LOGGER.info("POST /api/charging/index body=%s", body)
-    if "inv_sn" in body:
-        return web.json_response(load("charging_index.json"))
-    # device-discovery variant (README §2.5)
+    return web.json_response(load("charging_index.json"))
+
+
+async def equ_list(request: web.Request) -> web.Response:
+    if (err := check_signature(request)) is not None:
+        return err
+    _LOGGER.info("POST /bg/equList")
     return web.json_response(
         {"code": 1, "msg": "0000", "data": {"total": 1, "list": [{"INV_SN": "ABC0123456DEF789"}]}}
     )
@@ -95,6 +99,7 @@ def create_app() -> web.Application:
     app.router.add_post("/api/user/login", login)
     app.router.add_post("/api/station/list", station_list)
     app.router.add_post("/api/charging/index", charging_index)
+    app.router.add_post("/bg/equList", equ_list)
     app.router.add_post("/api/station/equipStat", equip_stat)
     app.router.add_post("/api/charging/equ/charging_record", charging_record)
     app.router.add_post("/api/charging/equ/detailChart", detail_chart)

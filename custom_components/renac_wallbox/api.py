@@ -103,6 +103,8 @@ class RenacApiClient:
         except aiohttp.ClientError as err:
             raise RenacApiError(f"Network error calling {path}: {err}") from err
 
+        _LOGGER.debug("POST %s data=%s -> %s", path, data, payload)
+
         code = payload.get("code")
         msg = payload.get("msg")
 
@@ -194,16 +196,19 @@ class RenacApiClient:
     async def async_get_station_devices(
         self, user_id: int, station_id: int
     ) -> list[dict[str, Any]]:
-        """List the wallbox device(s) under a station (api/charging/index).
+        """List the wallbox device(s) under a station (bg/equList).
 
-        INFERRED from the SPA's `getPileIndex` method, not captured live:
-            request:  {"user_id": <id>, "station_id": <id>, "status": 0,
-                       "offset": 0, "rows": 10}
-            response: {"total": N, "list": [{"INV_SN": "...", ...}]}
-        This is the same endpoint as `async_get_wallbox_status` below but
-        called with a different parameter shape; the API appears to
-        branch behavior on which fields are present. Verify against your
-        own account before depending on this in production.
+        CONFIRMED live (2026-08-03): the SPA's `getPileIndex()` calls
+        `d["n"]`, and static analysis of the minified charging-api module
+        shows export "n" is bound to a helper posting to `bg/equList`
+        (earlier README revisions incorrectly assumed this was
+        `api/charging/index` with different params -- that guess was
+        tested live and returns `{"code": 1, "data": null}`, i.e. no
+        device list; `bg/equList` is the corrected endpoint).
+
+        Request:  {"user_id": <id>, "station_id": <id>, "status": 0,
+                   "offset": 0, "rows": 10}
+        Response: {"total": N, "list": [{"INV_SN": "...", ...}]}
         """
         payload = {
             "user_id": user_id,
@@ -212,7 +217,7 @@ class RenacApiClient:
             "offset": 0,
             "rows": 10,
         }
-        data = await self._request("api/charging/index", payload)
+        data = await self._request("bg/equList", payload)
         return (data or {}).get("list", [])
 
     async def async_get_wallbox_status(self, inv_sn: str) -> dict[str, Any]:

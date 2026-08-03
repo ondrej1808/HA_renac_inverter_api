@@ -1,5 +1,9 @@
 # RENAC Wallbox — Home Assistant Integration
 
+> [!CAUTION]
+> **⛔ 100% AI-GENERATED / "VIBE-CODED" — NOT REVIEWED BY A PROFESSIONAL DEVELOPER. USE ENTIRELY AT YOUR OWN RISK. ⛔**
+> Every line of code, every API endpoint, and this entire README were produced by an AI coding agent through reverse engineering of a closed, undocumented cloud API — no human software engineer has audited this code for correctness or safety. It reads (and, if you extend it, could write) data related to your home's electrical/EV-charging equipment through your real RENAC account credentials. There is **no warranty of any kind** and the author accepts **no liability whatsoever** for any damage, data loss, account lockout, incorrect readings, or electrical/hardware issues arising from using this project. See [LICENSE](LICENSE). If that's not acceptable to you, don't use this.
+
 Custom Home Assistant integration that reads live telemetry from a **RENAC AC wallbox** (EV charger) via the RENAC cloud portal at `https://seceu.renacpower.com` (and its regional siblings). No local/LAN API exists for these devices — everything goes through RENAC's cloud, so this integration talks to the same backend the web portal uses.
 
 This document is written to be **directly actionable by a coding agent** (or a human) picking up this repository: it separates what was **confirmed against a real device** from what is **inferred from source and not yet verified**, and gives exact request/response payloads.
@@ -370,6 +374,10 @@ Expect to see `sensor.wallbox_..._power`, `..._voltage`, `..._state` (`idle`), `
 ---
 
 # 🇨🇿 Wallbox RENAC — integrace pro Home Assistant
+
+> [!CAUTION]
+> **⛔ 100 % VYGENEROVÁNO AI / "VIBE-CODED" — NEZKONTROLOVÁNO PROFESIONÁLNÍM VÝVOJÁŘEM. POUŽÍVÁTE ZCELA NA VLASTNÍ RIZIKO. ⛔**
+> Každý řádek kódu, každý API endpoint i celé toto README vytvořil AI agent reverzním inženýrstvím uzavřeného, nedokumentovaného cloudového API — žádný člověk-vývojář tento kód neauditoval z hlediska správnosti ani bezpečnosti. Čte (a pokud si ho rozšíříte, mohl by i zapisovat) data týkající se elektrického/EV-nabíjecího zařízení ve vaší domácnosti, a to pomocí vašich skutečných přihlašovacích údajů k účtu RENAC. Nejsou poskytovány **žádné záruky** a autor **nenese žádnou odpovědnost** za jakoukoli škodu, ztrátu dat, zablokování účtu, nesprávná čtení nebo elektrické/hardwarové problémy vzniklé používáním tohoto projektu. Viz [LICENSE](LICENSE). Pokud to pro vás není přijatelné, tento projekt nepoužívejte.
 
 Vlastní (custom) integrace pro Home Assistant, která čte živá data z **AC wallboxu RENAC** (nabíječky pro elektromobily) přes cloudový portál RENAC na `https://seceu.renacpower.com` (a jeho regionální varianty). Tato zařízení nemají žádné lokální/LAN API — vše jde přes cloud RENAC, takže integrace komunikuje se stejným backendem jako webový portál.
 
