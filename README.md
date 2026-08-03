@@ -51,17 +51,19 @@ This repository is a valid **HACS custom repository** (see [`hacs.json`](hacs.js
 
 ## 1. Status
 
+> ✅ **Successfully tested end-to-end on a real RENAC EV-AC3P-11K wallbox** — login, station/device auto-discovery, and live sensor readings (power, voltage, current, energy, cost, state, mode) all confirmed working through the full HACS install flow inside a real Home Assistant instance.
+
 | Piece | Status |
 |---|---|
 | Auth (login, token signing) | ✅ Confirmed against a live account |
 | `api/station/list` | ✅ Confirmed (live capture) |
 | `api/charging/index` (single device, `{inv_sn}`) | ✅ Confirmed (live capture) — **this is the "read all wallbox data" call** |
-| `api/charging/index` (device discovery, `{station_id,user_id,...}`) | ⚠️ Inferred from minified JS, not captured live |
+| `bg/equList` (device discovery per station) | ✅ Confirmed against a live account (an earlier guess of `api/charging/index` with different params was tested live and found wrong — see §2.5) |
 | `api/station/equipStat` | ✅ Confirmed (live capture) |
 | `api/charging/equ/charging_record` (session history) | ✅ Confirmed (live capture) |
 | `api/charging/equ/detailChart` (time-series history) | ✅ Confirmed (live capture) |
 | `api/charging/set` (writing mode / current limit) | ❌ Not implemented, endpoint exists but payload unconfirmed |
-| Home Assistant integration (`custom_components/renac_wallbox/`) | ✅ Implemented, sensors + binary_sensor, config flow, not yet tested inside a running HA instance |
+| Home Assistant integration (`custom_components/renac_wallbox/`) | ✅ Tested end-to-end against a real RENAC EV-AC3P-11K wallbox via the full HACS install flow in a real Home Assistant instance (see §3.6) |
 | Regions other than Europe | ⚠️ Base URL pattern guessed, unverified |
 
 **How this was reverse engineered:** the RENAC web portal is a Vue.js SPA. Its production JS bundles (`app.*.js` + chunk files) were fetched and searched directly (no login required to read the client code) for API route strings, the axios request/response interceptors, and the login form logic. This gave the auth scheme and most endpoint paths/params. A **HAR capture of a real authenticated browser session against a real wallbox** was then used to confirm exact request/response JSON shapes for the endpoints marked ✅ above. **All identifying values from that capture (token, user id, device serial, station id, station name, owner name, installer name) were replaced with fake placeholders before anything was written to this repository** — only the field *names* and realistic *shapes/value types* are real. The token itself was never written to disk outside the original local HAR file, and is not present anywhere in this repository or its history.
@@ -236,19 +238,19 @@ Field meanings (confirmed via the SPA's i18n string tables, cross-checked agains
 | 5 | Fault |
 | 6 | Charging |
 
-### 2.5 `POST api/charging/index` — device discovery (⚠️ inferred, not captured live)
+### 2.5 `POST bg/equList` — device discovery (✅ confirmed against a live account)
 
-Reconstructed from the SPA's `getPileIndex()` method. The *same URL* apparently branches on which parameters are supplied:
+Reconstructed from the SPA's `getPileIndex()` method, which calls a helper bound to export key `"n"` in the minified charging-api module. An earlier revision of this README guessed that helper was `api/charging/index` with a `{station_id, user_id, ...}` body — that guess was tested against a real RENAC EV-AC3P-11K account via a Docker-based Home Assistant instance and returned `{"code": 1, "data": null}` (no devices). Re-checking the minified JS's own export-to-function mapping (not just pattern-matching similar-looking code) showed export `"n"` is actually bound to a request against **`bg/equList`**, which was then confirmed live: the config flow correctly auto-discovers the wallbox with no manual serial entry needed.
 
 Request:
 ```json
 { "user_id": 100001, "station_id": 200001, "status": 0, "offset": 0, "rows": 10 }
 ```
-Expected response shape (unverified):
+Response:
 ```json
 { "total": 1, "list": [ { "INV_SN": "ABC0123456DEF789", "...": "..." } ] }
 ```
-Used to resolve a station's device serial (`INV_SN`) the first time, before switching to the confirmed single-device call in 2.4 for polling. **Verify this against your own account before relying on it** — if it doesn't behave as expected, the fallback in the shipped integration is to use `equ_sn` off the station object, or to prompt the user for the serial manually during config flow.
+Used to resolve a station's device serial (`INV_SN`) the first time, before switching to the confirmed single-device call in 2.4 for polling. If a station somehow returns zero devices (e.g. an unusual account setup), the config flow falls back to a free-text field so the serial can be entered manually.
 
 ### 2.6 `POST api/station/equipStat` (confirmed)
 
@@ -349,10 +351,9 @@ Not yet implemented, left as future work: session-history sensor from 2.7, per-p
 ### 3.4 Known gaps / what an implementing agent should verify next
 
 1. **Regions other than Europe** — confirm the base URL pattern for Asia/South America (or any other region) against a real account before shipping to non-EU users; currently only a guessed hostname pattern is offered.
-2. **Device-discovery call (2.5)** — not captured live; if it doesn't return the expected `list[].INV_SN` shape, the config flow's device-picker step will need adjusting.
-3. **`api/charging/set`** — capture a real "change charging mode" or "change current limit" action from the web portal (browser DevTools Network tab, or export a HAR like the one used for this document) before adding number/select control entities.
-4. **Token lifetime / re-login cadence** — the integration re-logs in reactively (on `msg == "1000"`), but the actual TTL of a token was not measured; consider whether a proactive re-login on a timer is worth adding once observed in practice.
-5. **`state` vs `unit` fields** — currently unexplained; if you find their meaning (e.g. by triggering a fault or changing currency), fold it into `const.py`.
+2. **`api/charging/set`** — capture a real "change charging mode" or "change current limit" action from the web portal (browser DevTools Network tab, or export a HAR like the one used for this document) before adding number/select control entities.
+3. **Token lifetime / re-login cadence** — the integration re-logs in reactively (on `msg == "1000"`), but the actual TTL of a token was not measured; consider whether a proactive re-login on a timer is worth adding once observed in practice.
+4. **`state` vs `unit` fields** — currently unexplained; if you find their meaning (e.g. by triggering a fault or changing currency), fold it into `const.py`.
 
 ### 3.5 Security notes
 
@@ -434,17 +435,19 @@ Tento repozitář je platný **vlastní (custom) repozitář HACS** (viz [`hacs.
 
 ## 1. Stav
 
+> ✅ **Úspěšně otestováno end-to-end na reálném wallboxu RENAC EV-AC3P-11K** — přihlášení, automatické vyhledání stanice/zařízení i živé čtení senzorů (výkon, napětí, proud, energie, náklady, stav, režim) potvrzeno funkční přes celý instalační postup HACS uvnitř běžícího Home Assistant.
+
 | Část | Stav |
 |---|---|
 | Autentizace (přihlášení, podepisování tokenu) | ✅ Ověřeno na reálném účtu |
 | `api/station/list` | ✅ Ověřeno (reálný zachycený provoz) |
 | `api/charging/index` (jedno zařízení, `{inv_sn}`) | ✅ Ověřeno (reálný zachycený provoz) — **toto je volání pro "vyčtení všech dat wallboxu"** |
-| `api/charging/index` (vyhledání zařízení, `{station_id,user_id,...}`) | ⚠️ Odvozeno z minifikovaného JS, není ověřeno na reálném provozu |
+| `bg/equList` (vyhledání zařízení podle stanice) | ✅ Ověřeno na reálném účtu (dřívější odhad `api/charging/index` s jinými parametry byl otestován naživo a ukázal se jako chybný — viz §2.5) |
 | `api/station/equipStat` | ✅ Ověřeno (reálný zachycený provoz) |
 | `api/charging/equ/charging_record` (historie nabíjecích relací) | ✅ Ověřeno (reálný zachycený provoz) |
 | `api/charging/equ/detailChart` (časová řada historie) | ✅ Ověřeno (reálný zachycený provoz) |
 | `api/charging/set` (zápis režimu / limitu proudu) | ❌ Neimplementováno, endpoint existuje, ale formát požadavku neznámý |
-| Integrace Home Assistant (`custom_components/renac_wallbox/`) | ✅ Implementováno (senzory + binary_sensor, config flow), zatím netestováno v běžícím HA |
+| Integrace Home Assistant (`custom_components/renac_wallbox/`) | ✅ Otestováno end-to-end na reálném wallboxu RENAC EV-AC3P-11K přes celý instalační postup HACS v běžícím Home Assistant (viz §3.6) |
 | Jiné regiony než Evropa | ⚠️ Vzor základní URL je pouze odhadnut, neověřeno |
 
 **Jak bylo API zjištěno:** webový portál RENAC je Vue.js SPA. Jeho produkční JS balíčky (`app.*.js` a chunk soubory) byly staženy a prohledány přímo (bez nutnosti přihlášení, jde o veřejný klientský kód) na řetězce API cest, axios request/response interceptory a logiku přihlašovacího formuláře. Tím se získalo autentizační schéma a většina cest/parametrů endpointů. Následně byl použit **HAR záznam reálné přihlášené relace prohlížeče proti skutečnému wallboxu** k ověření přesných tvarů JSON požadavků/odpovědí u endpointů označených ✅ výše. **Všechny identifikační hodnoty z tohoto záznamu (token, ID uživatele, sériové číslo zařízení, ID stanice, název stanice, jméno majitele, jméno instalatéra) byly před zápisem do tohoto repozitáře nahrazeny fiktivními hodnotami** — reálné jsou pouze *názvy* polí a realistické *tvary/typy* dat. Samotný token nebyl nikdy zapsán mimo původní lokální HAR soubor a v tomto repozitáři ani jeho historii se nikde nenachází.
@@ -617,19 +620,19 @@ Výčet `state2` (ověřeno srovnáním pozice v poli s čínskými zdrojovými 
 | 5 | Porucha |
 | 6 | Nabíjí se |
 
-### 2.5 `POST api/charging/index` — vyhledání zařízení (⚠️ odvozeno, není ověřeno naživo)
+### 2.5 `POST bg/equList` — vyhledání zařízení (✅ ověřeno na reálném účtu)
 
-Rekonstruováno z metody `getPileIndex()` v SPA. Zdá se, že *stejná URL* se chová jinak podle toho, jaké parametry dostane:
+Rekonstruováno z metody `getPileIndex()` v SPA, která volá pomocnou funkci navázanou na exportní klíč `"n"` v minifikovaném modulu charging-api. Dřívější verze tohoto README odhadovala, že jde o `api/charging/index` s tělem `{station_id, user_id, ...}` — tento odhad byl otestován na reálném účtu RENAC EV-AC3P-11K přes Docker instanci Home Assistant a vrátil `{"code": 1, "data": null}` (žádná zařízení). Opětovná kontrola skutečného mapování exportů na funkce v minifikovaném JS (ne jen podobnost vzoru kódu) ukázala, že export `"n"` je ve skutečnosti navázán na požadavek proti **`bg/equList`**, což bylo následně ověřeno naživo: config flow nyní správně automaticky najde wallbox bez nutnosti ručního zadání sériového čísla.
 
 Požadavek:
 ```json
 { "user_id": 100001, "station_id": 200001, "status": 0, "offset": 0, "rows": 10 }
 ```
-Očekávaný tvar odpovědi (neověřeno):
+Odpověď:
 ```json
 { "total": 1, "list": [ { "INV_SN": "ABC0123456DEF789", "...": "..." } ] }
 ```
-Používá se k prvotnímu zjištění sériového čísla zařízení (`INV_SN`) dané stanice, než se přejde na ověřené volání pro jedno zařízení z bodu 2.4 pro pravidelné dotazování. **Ověřte to na vlastním účtu, než se na to spolehnete** — pokud se chování neshoduje s očekáváním, náhradní řešení v dodané integraci je použít `equ_sn` přímo z objektu stanice, nebo nechat uživatele zadat sériové číslo ručně v config flow.
+Používá se k prvotnímu zjištění sériového čísla zařízení (`INV_SN`) dané stanice, než se přejde na ověřené volání pro jedno zařízení z bodu 2.4 pro pravidelné dotazování. Pokud by nějaká stanice vrátila nula zařízení (např. neobvyklé nastavení účtu), config flow nabídne textové pole pro ruční zadání sériového čísla.
 
 ### 2.6 `POST api/station/equipStat` (ověřeno)
 
@@ -728,10 +731,9 @@ Zatím neimplementováno, ponecháno jako budoucí práce: senzor historie relac
 ### 3.4 Známé mezery / co by měl implementující agent ověřit dále
 
 1. **Jiné regiony než Evropa** — ověřte vzor základní URL pro Asii/Jižní Ameriku (nebo jiný region) na reálném účtu, než to nasadíte pro uživatele mimo EU; v současnosti je nabídnut jen odhadnutý vzor hostname.
-2. **Volání pro vyhledání zařízení (2.5)** — nezachyceno naživo; pokud nevrací očekávaný tvar `list[].INV_SN`, bude potřeba upravit krok výběru zařízení v config flow.
-3. **`api/charging/set`** — zachyťte reálnou akci "změna režimu nabíjení" nebo "změna limitu proudu" z webového portálu (karta Network v DevTools prohlížeče, nebo export HAR jako u tohoto dokumentu), než přidáte ovládací entity typu number/select.
-4. **Životnost tokenu / frekvence opětovného přihlášení** — integrace se znovu přihlašuje reaktivně (při `msg == "1000"`), ale skutečná platnost tokenu nebyla změřena; zvažte, zda má smysl přidat proaktivní opětovné přihlášení na časovač, až to bude v praxi pozorováno.
-5. **Pole `state` vs. `unit`** — zatím nevysvětlená; pokud zjistíte jejich význam (např. vyvoláním poruchy nebo změnou měny), zapracujte to do `const.py`.
+2. **`api/charging/set`** — zachyťte reálnou akci "změna režimu nabíjení" nebo "změna limitu proudu" z webového portálu (karta Network v DevTools prohlížeče, nebo export HAR jako u tohoto dokumentu), než přidáte ovládací entity typu number/select.
+3. **Životnost tokenu / frekvence opětovného přihlášení** — integrace se znovu přihlašuje reaktivně (při `msg == "1000"`), ale skutečná platnost tokenu nebyla změřena; zvažte, zda má smysl přidat proaktivní opětovné přihlášení na časovač, až to bude v praxi pozorováno.
+4. **Pole `state` vs. `unit`** — zatím nevysvětlená; pokud zjistíte jejich význam (např. vyvoláním poruchy nebo změnou měny), zapracujte to do `const.py`.
 
 ### 3.5 Bezpečnostní poznámky
 
