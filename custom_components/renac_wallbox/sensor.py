@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
@@ -72,7 +73,10 @@ SENSOR_DESCRIPTIONS: tuple[RenacSensorDescription, ...] = (
         translation_key="charger_per_energy",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.MEASUREMENT,
+        # No state_class: this is a per-session value that resets to 0 at
+        # the start of every charge, so neither "measurement" (disallowed
+        # by HA for device_class energy) nor "total_increasing" (would
+        # misread the reset as a meter rollback) fit.
         value_fn=lambda data: data.get("charger_per_energy"),
     ),
     RenacSensorDescription(
@@ -118,21 +122,21 @@ SENSOR_DESCRIPTIONS: tuple[RenacSensorDescription, ...] = (
         key="max_cur",
         translation_key="max_cur",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        entity_category="diagnostic",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get("max_cur"),
     ),
     RenacSensorDescription(
         key="max_power",
         translation_key="max_power",
         native_unit_of_measurement=UnitOfPower.WATT,
-        entity_category="diagnostic",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get("max_power"),
     ),
     RenacSensorDescription(
         key="pv_min_solar_power",
         translation_key="pv_min_solar_power",
         native_unit_of_measurement=UnitOfPower.WATT,
-        entity_category="diagnostic",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: (data.get("pv") or {}).get("min_solar_power"),
     ),
 )

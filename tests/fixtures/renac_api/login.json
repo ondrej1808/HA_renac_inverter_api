@@ -1,0 +1,10 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": 100001,
+  "user": {
+    "token": "test-mock-token",
+    "role_id": 3,
+    "user_name": "test@example.com"
+  }
+}

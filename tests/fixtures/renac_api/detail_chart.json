@@ -1,0 +1,63 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "results": [
+      {
+        "upload_time": "2026-08-03 00:00:32",
+        "CHARGER_VOL_B": 236,
+        "CHARGER_VOL_A": 237.1,
+        "CHARGER_VOL_C": 235.6,
+        "CHARGER_TEMP": 31,
+        "CHARGER_POWER": 0,
+        "CHARGER_CUR_A": 0,
+        "CHARGER_CUR_B": 0,
+        "CHARGER_CUR_C": 0
+      },
+      {
+        "upload_time": "2026-08-03 00:01:36",
+        "CHARGER_VOL_B": 238.3,
+        "CHARGER_VOL_A": 239.1,
+        "CHARGER_VOL_C": 238.7,
+        "CHARGER_TEMP": 31,
+        "CHARGER_POWER": 0,
+        "CHARGER_CUR_A": 0,
+        "CHARGER_CUR_B": 0,
+        "CHARGER_CUR_C": 0
+      },
+      {
+        "upload_time": "2026-08-03 00:02:40",
+        "CHARGER_VOL_B": 239,
+        "CHARGER_VOL_A": 238.8,
+        "CHARGER_VOL_C": 238,
+        "CHARGER_TEMP": 31,
+        "CHARGER_POWER": 0,
+        "CHARGER_CUR_A": 0,
+        "CHARGER_CUR_B": 0,
+        "CHARGER_CUR_C": 0
+      },
+      {
+        "upload_time": "2026-08-03 00:03:44",
+        "CHARGER_VOL_B": 238.6,
+        "CHARGER_VOL_A": 237.1,
+        "CHARGER_VOL_C": 236.8,
+        "CHARGER_TEMP": 31,
+        "CHARGER_POWER": 0,
+        "CHARGER_CUR_A": 0,
+        "CHARGER_CUR_B": 0,
+        "CHARGER_CUR_C": 0
+      },
+      {
+        "upload_time": "2026-08-03 00:04:48",
+        "CHARGER_VOL_B": 238.8,
+        "CHARGER_VOL_A": 238.1,
+        "CHARGER_VOL_C": 238.1,
+        "CHARGER_TEMP": 31,
+        "CHARGER_POWER": 0,
+        "CHARGER_CUR_A": 0,
+        "CHARGER_CUR_B": 0,
+        "CHARGER_CUR_C": 0
+      }
+    ]
+  }
+}

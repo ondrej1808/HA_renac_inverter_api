@@ -1,0 +1,74 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "total": 13,
+    "results": [
+      {
+        "equ_sn": "ABC0123456DEF789",
+        "begin_time": "2026-08-01 17:18:45",
+        "begin_day": "2026-08-01",
+        "status": "1",
+        "end_time": "2026-08-01 17:26:03",
+        "end_day": "2026-08-01",
+        "per_energy": "0.7",
+        "per_cost": "2.88",
+        "day_energy": "0.7",
+        "day_cost": "2.88",
+        "mark": "0"
+      },
+      {
+        "equ_sn": "ABC0123456DEF789",
+        "begin_time": "2026-07-29 16:56:10",
+        "begin_day": "2026-07-29",
+        "status": "1",
+        "end_time": "2026-07-29 17:34:00",
+        "end_day": "2026-07-29",
+        "per_energy": "3.0",
+        "per_cost": "11.17",
+        "day_energy": "3.0",
+        "day_cost": "11.17",
+        "mark": "0"
+      },
+      {
+        "equ_sn": "ABC0123456DEF789",
+        "begin_time": "2026-07-29 10:37:35",
+        "begin_day": "2026-07-29",
+        "status": "1",
+        "end_time": "2026-07-29 15:07:36",
+        "end_day": "2026-07-29",
+        "per_energy": "19.1",
+        "per_cost": "37.41",
+        "day_energy": "19.1",
+        "day_cost": "37.41",
+        "mark": "0"
+      },
+      {
+        "equ_sn": "ABC0123456DEF789",
+        "begin_time": "2026-07-28 17:32:16",
+        "begin_day": "2026-07-28",
+        "status": "1",
+        "end_time": "2026-07-28 18:41:40",
+        "end_day": "2026-07-28",
+        "per_energy": "5.2",
+        "per_cost": "0.0",
+        "day_energy": "5.2",
+        "day_cost": "0.0",
+        "mark": "0"
+      },
+      {
+        "equ_sn": "ABC0123456DEF789",
+        "begin_time": "2026-07-28 17:19:10",
+        "begin_day": "2026-07-28",
+        "status": "1",
+        "end_time": "2026-07-28 17:19:55",
+        "end_day": "2026-07-28",
+        "per_energy": "0.0",
+        "per_cost": "0.15",
+        "day_energy": "0.0",
+        "day_cost": "0.15",
+        "mark": "0"
+      }
+    ]
+  }
+}

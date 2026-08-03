@@ -1,0 +1,25 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "total": 1,
+    "list": [
+      {
+        "station_name": "Wallbox 000000",
+        "enduser_name": "000000_Jan_Novak",
+        "station_id": 200001,
+        "photos": "https://cdn.example.com/station/placeholder.png",
+        "station_capacity": 11,
+        "installer_name": "InstallerCompany",
+        "grid_time": "2025-05-03",
+        "sum_energy": 117987,
+        "day_energy": 0,
+        "timezone_id": 29,
+        "equ_count": 1,
+        "station_type": 8,
+        "order_id": 2,
+        "status": 0
+      }
+    ]
+  }
+}

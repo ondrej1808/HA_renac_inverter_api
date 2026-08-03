@@ -1,0 +1,34 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "phase": 1,
+    "charger_total_energy": 3244.1,
+    "pv": {
+      "inv_sn": "ABC0123456DEF789",
+      "import_grid": 1,
+      "min_solar_power": 8000,
+      "boost": 0,
+      "manual_energy": 0,
+      "start_time": null,
+      "stop_time": null,
+      "auto_time": null,
+      "auto_energy": 0,
+      "last_operated_time": "2026-08-02 18:38:37"
+    },
+    "state2": 0,
+    "mode": 1,
+    "max_cur": 7,
+    "max_power": 22000,
+    "unit": 12,
+    "charger_total_cost": 8585,
+    "charger_cur": 0,
+    "charger_per_energy": 0,
+    "charger_per_cost": 0,
+    "charger_power": 0,
+    "unit_code": "Kč",
+    "state": 2,
+    "charger_vol": 236.5,
+    "charger_per_time": 0
+  }
+}

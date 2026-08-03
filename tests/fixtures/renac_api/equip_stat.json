@@ -1,0 +1,10 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "total_online_equip": 1,
+    "total_off_equip": 0,
+    "total_alarm_equip": 0,
+    "total_equip": 1
+  }
+}

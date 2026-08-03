@@ -1,0 +1,33 @@
+# Local/CI end-to-end test stack for the RENAC Wallbox integration.
+#
+# Brings up:
+#   - mock-renac-api: replays sanitized, real-shaped RENAC cloud
+#     responses captured from a real session (tests/fixtures/renac_api/)
+#     and enforces the real Token/timestamp/sign signing scheme.
+#   - homeassistant: a real Home Assistant core instance with
+#     custom_components/renac_wallbox mounted in, pointed at
+#     mock-renac-api instead of the real RENAC cloud.
+#
+# No real credentials, tokens, or network egress to renacpower.com are
+# involved. See tests/docker/run_e2e.py for the automated flow.
+#
+# Usage: docker compose -f docker-compose.test.yml up --build
+services:
+  mock-renac-api:
+    build:
+      context: .
+      dockerfile: tests/mock_server/Dockerfile
+    ports:
+      - "18084:8084"
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    depends_on:
+      - mock-renac-api
+    volumes:
+      - ./docker/ha_config:/config
+      - ./custom_components/renac_wallbox:/config/custom_components/renac_wallbox:ro
+    ports:
+      - "18123:8123"
+    environment:
+      - TZ=Europe/Prague

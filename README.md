@@ -342,6 +342,30 @@ Not yet implemented, left as future work: session-history sensor from 2.7, per-p
 * The signing salt (`SIGN_SALT` in `const.py`) is a static string baked into RENAC's own public web client — treating it as a secret would be pointless (it ships in every page load), but do not present it as *your* code's secret if this project is published.
 * This integration only performs **read** operations against documented, observed endpoints. It never writes to `api/charging/set` or similar control endpoints as shipped.
 
+### 3.6 Testing (no real credentials required)
+
+Two independent test layers exist, both driven entirely by **sanitized, real-shaped fixtures** derived from the original HAR capture (`tests/fixtures/renac_api/*.json` — same placeholder values as §2's examples). Neither layer ever contacts the real RENAC cloud or needs a real email/password/token.
+
+**1. Unit tests** (`tests/test_api.py`) — spin up a throwaway in-process `aiohttp` server that replays the fixtures and independently re-implements the `Token`/`timestamp`/`sign` check, so the tests fail if `api.py`'s signing logic ever drifts from the real scheme:
+```bash
+pip install -r tests/requirements-test.txt
+pytest tests/test_api.py -v
+```
+
+**2. Full HACS-integration end-to-end test, in Docker** (`docker-compose.test.yml`) — runs an actual Home Assistant core container with `custom_components/renac_wallbox` mounted in exactly as HACS would install it, alongside a small mock RENAC API container (`tests/mock_server/`) serving the same fixtures over HTTP and enforcing the real signing scheme. This exercises the *real* config flow, coordinator, and entity platforms inside a real HA instance — it caught two real bugs during development (an invalid `state_class`/`device_class` combination on the session-energy sensor, and a plain string passed where HA expects an `EntityCategory` enum on the three diagnostic sensors — both now fixed in `sensor.py`).
+
+```bash
+docker compose -f docker-compose.test.yml up --build -d
+# wait ~10s for Home Assistant to start, then complete onboarding + the
+# config flow against the mock server (http://mock-renac-api:8084) using
+# HA's own REST API — see the walkthrough in the PR/commit history for
+# the exact curl sequence, or drive it through the UI at
+# http://localhost:18123 with any email/password (the mock accepts
+# anything) and base URL http://mock-renac-api:8084.
+docker compose -f docker-compose.test.yml down
+```
+Expect to see `sensor.wallbox_..._power`, `..._voltage`, `..._state` (`idle`), `..._charge_mode` (`pv`), etc. appear under `/api/states`, matching the field values documented in §2.4.
+
 ---
 ---
 
@@ -678,3 +702,27 @@ Zatím neimplementováno, ponecháno jako budoucí práce: senzor historie relac
 * Přihlašovací endpoint RENAC přijímá **heslo v čistém textu přes HTTPS** — na klientovi není žádné hashování, které by bylo třeba zachovat. Ukládejte přihlašovací údaje stejně, jako Home Assistant ukládá údaje jakékoli jiné integrace (v config entry, šifrováno na disku, pokud to má HA nastaveno).
 * Salt pro podepisování (`SIGN_SALT` v `const.py`) je statický řetězec zabudovaný přímo do veřejného webového klienta RENAC — považovat ho za tajemství by nemělo smysl (posílá se při každém načtení stránky), ale při zveřejnění tohoto projektu jej neprezentujte jako tajemství vašeho vlastního kódu.
 * Tato integrace ve stávající podobě provádí pouze **čtecí** operace proti zdokumentovaným, pozorovaným endpointům. Nikdy nezapisuje do `api/charging/set` ani podobných řídicích endpointů.
+
+### 3.6 Testování (bez nutnosti reálných přihlašovacích údajů)
+
+Existují dvě nezávislé vrstvy testů, obě řízené výhradně **anonymizovanými fixture daty s reálným tvarem** odvozenými z původního HAR záznamu (`tests/fixtures/renac_api/*.json` — stejné fiktivní hodnoty jako v příkladech v §2). Ani jedna vrstva nikdy nekontaktuje reálný cloud RENAC a nepotřebuje reálný e-mail/heslo/token.
+
+**1. Unit testy** (`tests/test_api.py`) — spustí dočasný in-process `aiohttp` server, který přehrává fixtures a nezávisle si sám ověřuje hlavičky `Token`/`timestamp`/`sign`, takže testy selžou, pokud se logika podepisování v `api.py` někdy rozejde s reálným schématem:
+```bash
+pip install -r tests/requirements-test.txt
+pytest tests/test_api.py -v
+```
+
+**2. Kompletní end-to-end test celé HACS integrace v Dockeru** (`docker-compose.test.yml`) — spustí skutečný kontejner s Home Assistant core, do kterého je `custom_components/renac_wallbox` připojen přesně tak, jak by ho nainstaloval HACS, spolu s malým mock RENAC API kontejnerem (`tests/mock_server/`), který servíruje stejná fixture data přes HTTP a vynucuje reálné schéma podepisování. Tím se otestuje *skutečný* config flow, coordinator i entity platformy uvnitř běžícího HA — během vývoje to odhalilo dvě reálné chyby (neplatná kombinace `state_class`/`device_class` u senzoru energie relace, a obyčejný řetězec předaný tam, kde HA očekává enum `EntityCategory` u tří diagnostických senzorů — obojí je nyní opraveno v `sensor.py`).
+
+```bash
+docker compose -f docker-compose.test.yml up --build -d
+# počkejte ~10 s, než Home Assistant nastartuje, pak dokončete onboarding
+# a config flow proti mock serveru (http://mock-renac-api:8084) přes REST
+# API Home Assistant — přesnou posloupnost curl příkazů najdete v historii
+# commitů, nebo to projeďte přes UI na http://localhost:18123 s libovolným
+# e-mailem/heslem (mock přijme cokoli) a základní URL
+# http://mock-renac-api:8084.
+docker compose -f docker-compose.test.yml down
+```
+Očekávejte, že se pod `/api/states` objeví `sensor.wallbox_..._power`, `..._voltage`, `..._state` (`idle`), `..._charge_mode` (`pv`) atd., odpovídající hodnotám polí zdokumentovaným v §2.4.
