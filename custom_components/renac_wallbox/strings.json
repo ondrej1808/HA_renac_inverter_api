@@ -131,6 +131,7 @@
       }
     },
     "switch": {
+      "charging_switch": { "name": "Charging" },
       "pv_import_grid": { "name": "PV allow grid import" },
       "off_peak_boost": { "name": "Off-peak boost" },
       "load_balance_enabled": { "name": "Load balance" }

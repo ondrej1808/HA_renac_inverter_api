@@ -376,6 +376,25 @@ class RenacApiClient:
         """
         await self.async_set_charging(inv_sn, 3, {"charger_mode": mode})
 
+    async def async_set_charger_command(self, inv_sn: str, command: int) -> None:
+        """Start or stop charging (type=3, `charger_cmd`).
+
+        CONFIRMED live: captured from a real "turn on"/"turn off charging"
+        click in the web portal (HAR, 2026-08-03) -- the only write
+        endpoint in this integration verified against a live network
+        request rather than derived from decompiled JS. See docs/API.md
+        §2.10 for the full writeup.
+
+        `command`: 1 = start charging, 2 = stop charging.
+
+        Note the real capture sends `"params": 1` as a JSON integer, not
+        a string -- unlike every other `charging/set` write in this
+        client (built by joining string lists), so this method bypasses
+        `async_set_charging()`'s string formatting to match exactly.
+        """
+        payload = {"equ_sn": inv_sn, "type": 3, "ids": "charger_cmd", "params": command}
+        await self._request("api/charging/set", payload)
+
     async def async_get_equip_stat(self, user_id: int, station_id: int) -> dict[str, Any]:
         """Online/offline/alarm device counts for a station (confirmed).
 

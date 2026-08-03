@@ -123,7 +123,10 @@ async def charging_set(request: web.Request) -> web.Response:
         return web.json_response({"code": 400, "msg": "9999", "data": None})
 
     ids = (body.get("ids") or "").split(",")
-    params = (body.get("params") or "").split(",")
+    raw_params = body.get("params")
+    # charger_cmd is sent as a raw JSON int, not a comma-joined string
+    # like every other charging/set write -- confirmed live (§2.10).
+    params = raw_params.split(",") if isinstance(raw_params, str) else [raw_params]
     for field, value in zip(ids, params):
         if not field:
             continue
@@ -131,13 +134,15 @@ async def charging_set(request: web.Request) -> web.Response:
             value = float(value)
             if value.is_integer():
                 value = int(value)
-        except ValueError:
+        except (ValueError, TypeError):
             pass
         state[field] = value
         if field == "max_output_cur":
             _charging_index_state["max_cur"] = value
         if field == "charger_mode":
             _charging_index_state["mode"] = value
+        if field == "charger_cmd":
+            _charging_index_state["state2"] = 3 if value == 1 else 4
     return web.json_response({"code": 1, "msg": "0000", "data": None})
 
 

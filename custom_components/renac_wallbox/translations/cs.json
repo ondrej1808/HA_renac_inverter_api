@@ -131,6 +131,7 @@
       }
     },
     "switch": {
+      "charging_switch": { "name": "Nabíjení" },
       "pv_import_grid": { "name": "PV povolit odběr ze sítě" },
       "off_peak_boost": { "name": "Boost v nízkém tarifu" },
       "load_balance_enabled": { "name": "Vyvažování zátěže" }

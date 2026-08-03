@@ -1,8 +1,11 @@
-"""Switch entities to read/write RENAC wallbox boolean settings.
+"""Switch entities for RENAC wallbox boolean settings, plus charging on/off.
 
-All backed by RenacSettingsCoordinator, derived from decompiled JS, not
-a live capture -- see docs/API.md §2.10. Treat as higher-risk than the
-read-only sensors until exercised against a real account.
+Most entities here are backed by RenacSettingsCoordinator, derived from
+decompiled JS, not a live capture -- see docs/API.md §2.10. Treat those
+as higher-risk than the read-only sensors until exercised against a
+real account. `RenacChargingSwitch` (charging on/off) is the exception:
+it was confirmed via a real HAR capture of the web portal's "turn on"/
+"turn off charging" buttons and is backed by the realtime coordinator.
 """
 from __future__ import annotations
 
@@ -18,8 +21,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import RenacApiError
-from .const import CONF_STATION_NAME, DOMAIN
-from .coordinator import RenacSettingsCoordinator
+from .const import (
+    CHARGER_CMD_START,
+    CHARGER_CMD_STOP,
+    CHARGING_ACTIVE_STATES,
+    CONF_STATION_NAME,
+    DOMAIN,
+)
+from .coordinator import RenacSettingsCoordinator, RenacWallboxCoordinator
 
 
 async def async_setup_entry(
@@ -27,10 +36,65 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    settings: RenacSettingsCoordinator = hass.data[DOMAIN][entry.entry_id]["settings"]
-    async_add_entities(
+    entry_data = hass.data[DOMAIN][entry.entry_id]
+    coordinator: RenacWallboxCoordinator = entry_data["coordinator"]
+    settings: RenacSettingsCoordinator = entry_data["settings"]
+
+    entities: list[SwitchEntity] = [RenacChargingSwitch(coordinator, entry)]
+    entities.extend(
         RenacSettingsSwitch(settings, entry, desc) for desc in SWITCH_DESCRIPTIONS
     )
+    async_add_entities(entities)
+
+
+class RenacChargingSwitch(CoordinatorEntity[RenacWallboxCoordinator], SwitchEntity):
+    """Start/stop charging (api/charging/set type=3, `charger_cmd`).
+
+    CONFIRMED live via a real HAR capture of the web portal's "turn on"/
+    "turn off charging" buttons (2026-08-03) -- the only write action in
+    this integration verified against a real network request rather
+    than derived from decompiled JS. See docs/API.md §2.10.
+
+    `is_on` reflects the wallbox's actual reported state (`state2` in
+    {3, 6} = "charging"), not just the last command sent -- e.g. it
+    stays off if you send "start" but no vehicle is plugged in.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "charging_switch"
+
+    def __init__(self, coordinator: RenacWallboxCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.inv_sn}_charging_switch"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.inv_sn)},
+            name=entry.data.get(CONF_STATION_NAME, coordinator.inv_sn),
+            manufacturer="RENAC",
+            model="AC Wallbox",
+            serial_number=coordinator.inv_sn,
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        if self.coordinator.data is None:
+            return None
+        return self.coordinator.data.get("state2") in CHARGING_ACTIVE_STATES
+
+    async def _async_send(self, command: int) -> None:
+        try:
+            await self.coordinator.client.async_set_charger_command(
+                self.coordinator.inv_sn, command
+            )
+        except RenacApiError:
+            self.coordinator.logger.exception("Failed to send charger_cmd=%s", command)
+            raise
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_send(CHARGER_CMD_START)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_send(CHARGER_CMD_STOP)
 
 
 @dataclass(frozen=True, kw_only=True)

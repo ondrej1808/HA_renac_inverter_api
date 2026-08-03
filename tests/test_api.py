@@ -117,18 +117,22 @@ class FakeRenacServer:
         body = await request.json()
         self.set_calls.append(body)
         state = self._set_type_state[body["type"]]
-        for field, value in zip(body["ids"].split(","), body["params"].split(",")):
+        raw_params = body["params"]
+        params = raw_params.split(",") if isinstance(raw_params, str) else [raw_params]
+        for field, value in zip(body["ids"].split(","), params):
             try:
                 value = float(value)
                 if value.is_integer():
                     value = int(value)
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
             state[field] = value
             if field == "max_output_cur":
                 self.charging_index_state["max_cur"] = value
             if field == "charger_mode":
                 self.charging_index_state["mode"] = value
+            if field == "charger_cmd":
+                self.charging_index_state["state2"] = 3 if value == 1 else 4
         return web.json_response({"code": 1, "msg": "0000", "data": None})
 
     async def equ_list(self, request: web.Request) -> web.Response:
@@ -262,6 +266,35 @@ async def test_set_charger_mode_sends_expected_payload(server):
     }
     status = await api.async_get_wallbox_status("ABC0123456DEF789")
     assert status["mode"] == 1
+
+
+async def test_set_charger_command_matches_live_capture(server):
+    """charger_cmd is the one write confirmed via a real HAR capture
+    (turning charging on/off in the web portal, 2026-08-03) rather than
+    decompiled JS -- and uniquely sends `params` as a raw JSON int, not
+    a comma-joined string like every other charging/set write."""
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    await api.async_login()
+
+    await api.async_set_charger_command("ABC0123456DEF789", 1)
+    assert server.fake.set_calls[-1] == {
+        "equ_sn": "ABC0123456DEF789",
+        "type": 3,
+        "ids": "charger_cmd",
+        "params": 1,
+    }
+    status = await api.async_get_wallbox_status("ABC0123456DEF789")
+    assert status["state2"] == 3  # mock simulates "now charging"
+
+    await api.async_set_charger_command("ABC0123456DEF789", 2)
+    assert server.fake.set_calls[-1] == {
+        "equ_sn": "ABC0123456DEF789",
+        "type": 3,
+        "ids": "charger_cmd",
+        "params": 2,
+    }
+    status = await api.async_get_wallbox_status("ABC0123456DEF789")
+    assert status["state2"] == 4  # mock simulates "stopped, still plugged in"
 
 
 async def test_set_pv_settings_sends_expected_payload(server):

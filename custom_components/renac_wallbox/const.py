@@ -47,6 +47,17 @@ CHARGE_MODES = {
     2: "off_peak",
 }
 
+# api/charging/set type=3, ids="charger_cmd" -- CONFIRMED live via a real
+# HAR capture of the "turn on"/"turn off charging" buttons (2026-08-03).
+# The only write value in this integration verified against a real
+# network request rather than derived from decompiled JS.
+CHARGER_CMD_START = 1
+CHARGER_CMD_STOP = 2
+
+# state2 values that mean "actively delivering current" (see CHARGE_STATES
+# below) -- used by switch.py's charging on/off entity to report is_on.
+CHARGING_ACTIVE_STATES = {3, 6}
+
 # api/charging/index -> data.state2 (confirmed via i18n pileState ordering:
 # pile_state0=Idle(空闲), pile_state124=Plugged in, not charging(插枪未充电),
 # pile_state36=Charging(充电中), pile_state5=Fault(故障))

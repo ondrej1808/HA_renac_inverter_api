@@ -90,6 +90,8 @@ Polling interval defaults to 30s and can be changed afterwards via the integrati
 
 **Read-only sensors** (confirmed against real hardware): power (W), voltage (V), current (A), total energy (kWh), session energy (kWh), total cost, session cost, session duration, state (`idle`/`plugged_in`/`charging`/`fault`), phase (`single_phase`/`three_phase`), max power limit, PV minimum solar power threshold (diagnostic), plus a `problem` binary sensor for fault state.
 
+**✅ `switch.*_charging`** — turn charging on/off. Unlike everything else below, this one is **confirmed live**: captured from a real "turn on"/"turn off charging" click in the web portal. `is_on` reflects the wallbox's actual reported state, not just the last command sent.
+
 **Editable settings** — 24 more entities across `number`/`select`/`switch`/`time` (max current, protect temperature, meter address, charge mode, PV boost, off-peak schedule, load balancing, fast-charge schedule, and more). ⚠️ These were derived from decompiled JS and tested end-to-end against a mock server (no errors, correct payloads confirmed) but **not yet against a real account** — see the full field-by-field table in [docs/API.md §2.10](docs/API.md) before relying on them, and start with something low-risk (like the meter address) rather than current/power settings.
 
 **Security, in short:** the RENAC login endpoint accepts a plaintext password over HTTPS (no client-side hashing to preserve). This integration only ever *reads* data — it never writes to `api/charging/set` or any other control endpoint. See [docs/API.md §4.1](docs/API.md) for the full write-up.
@@ -192,6 +194,8 @@ Tento repozitář je platný **vlastní (custom) repozitář HACS** (viz [`hacs.
 Výchozí interval dotazování je 30 s, lze změnit později přes **Konfigurovat** u integrace (options flow), v rozsahu 10–3600 s.
 
 **Pouze ke čtení senzory** (ověřeno na reálném hardwaru): výkon (W), napětí (V), proud (A), celková energie (kWh), energie relace (kWh), celkové náklady, náklady relace, doba trvání relace, stav (`idle`/`plugged_in`/`charging`/`fault`), fáze (`single_phase`/`three_phase`), limit max. výkonu, PV práh minimálního solárního výkonu (diagnostický), plus binární senzor `problem` pro stav poruchy.
+
+**✅ `switch.*_charging`** — zapnout/vypnout nabíjení. Na rozdíl od všeho níže je tato entita **ověřená naživo**: zachycena z reálného kliknutí na "zapnout"/"vypnout nabíjení" ve webovém portálu. `is_on` odráží skutečně hlášený stav wallboxu, ne jen poslední odeslaný příkaz.
 
 **Editovatelná nastavení** — 24 dalších entit napříč `number`/`select`/`switch`/`time` (max. proud, ochranná teplota, adresa elektroměru, režim nabíjení, PV boost, rozvrh nízkého tarifu, vyvažování zátěže, plán rychlého nabíjení a další). ⚠️ Byla odvozena z dekompilovaného JS a otestována end-to-end proti mock serveru (bez chyb, správný payload potvrzen), ale **zatím ne proti reálnému účtu** — kompletní tabulku pole po poli najdete v [docs/API.md §2.10](docs/API.md), než se na ně spolehnete, a začněte něčím nízkorizikovým (třeba adresou elektroměru), ne nastavením proudu/výkonu.
 
