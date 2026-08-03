@@ -118,13 +118,9 @@ SENSOR_DESCRIPTIONS: tuple[RenacSensorDescription, ...] = (
         options=sorted(set(CHARGE_PHASES.values())),
         value_fn=lambda data: CHARGE_PHASES.get(data.get("phase")),
     ),
-    RenacSensorDescription(
-        key="max_cur",
-        translation_key="max_cur",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: data.get("max_cur"),
-    ),
+    # max_cur is intentionally not exposed as a sensor: it's now a
+    # writable `number.*_max_current_setting` entity (see number.py),
+    # which also displays the current value.
     RenacSensorDescription(
         key="max_power",
         translation_key="max_power",

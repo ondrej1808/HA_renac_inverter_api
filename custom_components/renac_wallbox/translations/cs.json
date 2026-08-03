@@ -76,12 +76,14 @@
           "three_phase": "Třífázové"
         }
       },
-      "max_cur": { "name": "Limit max. proudu" },
       "max_power": { "name": "Limit max. výkonu" },
       "pv_min_solar_power": { "name": "PV min. práh solárního výkonu" }
     },
     "binary_sensor": {
       "charger_fault": { "name": "Porucha" }
+    },
+    "number": {
+      "max_current_setting": { "name": "Limit max. proudu" }
     }
   }
 }

@@ -45,8 +45,13 @@ class FakeRenacServer:
         self.app.router.add_post("/api/user/login", self.login)
         self.app.router.add_post("/api/station/list", self.station_list)
         self.app.router.add_post("/api/charging/index", self.charging_index)
+        self.app.router.add_post("/api/charging/basic", self.charging_basic)
+        self.app.router.add_post("/api/charging/set", self.charging_set)
         self.app.router.add_post("/bg/equList", self.equ_list)
         self.app.router.add_post("/api/station/equipStat", self.equip_stat)
+        self.charging_index_state = load_fixture("charging_index.json")["data"]
+        self.charging_basic_state = load_fixture("charging_basic.json")["data"]
+        self.set_calls: list[dict] = []
 
     async def _check_signature(self, request: web.Request) -> None:
         token = request.headers.get("Token")
@@ -70,7 +75,23 @@ class FakeRenacServer:
     async def charging_index(self, request: web.Request) -> web.Response:
         self.received_paths.append(request.path)
         await self._check_signature(request)
-        return web.json_response(load_fixture("charging_index.json"))
+        return web.json_response({"code": 1, "msg": "0000", "data": self.charging_index_state})
+
+    async def charging_basic(self, request: web.Request) -> web.Response:
+        self.received_paths.append(request.path)
+        await self._check_signature(request)
+        return web.json_response({"code": 1, "msg": "0000", "data": self.charging_basic_state})
+
+    async def charging_set(self, request: web.Request) -> web.Response:
+        self.received_paths.append(request.path)
+        await self._check_signature(request)
+        body = await request.json()
+        self.set_calls.append(body)
+        for field, value in zip(body["ids"].split(","), body["params"].split(",")):
+            self.charging_basic_state[field] = value
+            if field == "max_output_cur":
+                self.charging_index_state["max_cur"] = value
+        return web.json_response({"code": 1, "msg": "0000", "data": None})
 
     async def equ_list(self, request: web.Request) -> web.Response:
         self.received_paths.append(request.path)
@@ -143,6 +164,36 @@ async def test_get_station_devices_uses_bg_equlist(server):
     devices = await api.async_get_station_devices(user_id, 200001)
     assert devices == [{"INV_SN": "ABC0123456DEF789"}]
     assert "/bg/equList" in server.fake.received_paths
+
+
+async def test_get_charging_basic(server):
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    await api.async_login()
+    basic = await api.async_get_charging_basic("ABC0123456DEF789")
+    assert basic["max_output_cur"] == 7
+
+
+async def test_set_max_current_sends_expected_payload(server):
+    """Confirms the exact api/charging/set request shape reverse
+    engineered from the settings form's setMode(2) method: type=2,
+    ids/params as single-item comma-joined lists for a one-field write."""
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    await api.async_login()
+    await api.async_set_max_current("ABC0123456DEF789", 16)
+
+    assert len(server.fake.set_calls) == 1
+    call = server.fake.set_calls[0]
+    assert call == {
+        "equ_sn": "ABC0123456DEF789",
+        "type": 2,
+        "ids": "max_output_cur",
+        "params": "16",
+    }
+
+    # And the mock reflects it back on subsequent reads, same as the
+    # real API would after a successful write.
+    status = await api.async_get_wallbox_status("ABC0123456DEF789")
+    assert status["max_cur"] == "16"
 
 
 async def test_requests_are_actually_signed(server):

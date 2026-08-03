@@ -88,7 +88,7 @@ This repository is a valid **HACS custom repository** (see [`hacs.json`](hacs.js
 
 Polling interval defaults to 30s and can be changed afterwards via the integration's **Configure** (options flow), 10–3600s.
 
-**What you get:** power (W), voltage (V), current (A), total energy (kWh), session energy (kWh), total cost, session cost, session duration, state (`idle`/`plugged_in`/`charging`/`fault`), mode (`fast`/`pv`/`off_peak`), phase (`single_phase`/`three_phase`), max current limit, max power limit, PV minimum solar power threshold (diagnostic), plus a `problem` binary sensor for fault state.
+**What you get:** power (W), voltage (V), current (A), total energy (kWh), session energy (kWh), total cost, session cost, session duration, state (`idle`/`plugged_in`/`charging`/`fault`), mode (`fast`/`pv`/`off_peak`), phase (`single_phase`/`three_phase`), max power limit, PV minimum solar power threshold (diagnostic), plus a `problem` binary sensor for fault state — and an **editable max current limit** (`number.*_max_current_limit`, 6–32 A) you can set directly from Home Assistant. ⚠️ The write path was derived from decompiled JS and tested against a mock server, not yet against a real account — see [docs/API.md §2.10](docs/API.md) before relying on it.
 
 **Security, in short:** the RENAC login endpoint accepts a plaintext password over HTTPS (no client-side hashing to preserve). This integration only ever *reads* data — it never writes to `api/charging/set` or any other control endpoint. See [docs/API.md §4.1](docs/API.md) for the full write-up.
 
@@ -189,7 +189,7 @@ Tento repozitář je platný **vlastní (custom) repozitář HACS** (viz [`hacs.
 
 Výchozí interval dotazování je 30 s, lze změnit později přes **Konfigurovat** u integrace (options flow), v rozsahu 10–3600 s.
 
-**Co dostanete:** výkon (W), napětí (V), proud (A), celková energie (kWh), energie relace (kWh), celkové náklady, náklady relace, doba trvání relace, stav (`idle`/`plugged_in`/`charging`/`fault`), režim (`fast`/`pv`/`off_peak`), fáze (`single_phase`/`three_phase`), limit max. proudu, limit max. výkonu, PV práh minimálního solárního výkonu (diagnostický), plus binární senzor `problem` pro stav poruchy.
+**Co dostanete:** výkon (W), napětí (V), proud (A), celková energie (kWh), energie relace (kWh), celkové náklady, náklady relace, doba trvání relace, stav (`idle`/`plugged_in`/`charging`/`fault`), režim (`fast`/`pv`/`off_peak`), fáze (`single_phase`/`three_phase`), limit max. výkonu, PV práh minimálního solárního výkonu (diagnostický), plus binární senzor `problem` pro stav poruchy — a **editovatelný limit max. proudu** (`number.*_max_current_limit`, 6–32 A), který můžete nastavit přímo z Home Assistant. ⚠️ Zápisová cesta byla odvozena z dekompilovaného JS a otestována proti mock serveru, zatím ne proti reálnému účtu — viz [docs/API.md §2.10](docs/API.md), než se na ni spolehnete.
 
 **Bezpečnost ve zkratce:** přihlašovací endpoint RENAC přijímá heslo v čistém textu přes HTTPS (na klientovi není žádné hashování, které by bylo třeba zachovat). Tato integrace pouze *čte* data — nikdy nezapisuje do `api/charging/set` ani jiného řídicího endpointu. Kompletní rozbor viz [docs/API.md §4.1](docs/API.md).
 

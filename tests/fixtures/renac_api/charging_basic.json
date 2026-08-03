@@ -1,0 +1,16 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "charing_mode": 1,
+    "rfid": "",
+    "max_output_cur": 7,
+    "protect_temp": 85,
+    "max_input_power": 22000,
+    "allow_charging_time_begin": "00:00",
+    "allow_charging_time_end": "23:59",
+    "external_cur_sampling": 0,
+    "meter_address": 1,
+    "rate_number": 0
+  }
+}

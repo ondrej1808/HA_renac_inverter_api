@@ -73,4 +73,4 @@ CONF_INV_SN = "inv_sn"
 
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=30)
 
-PLATFORMS = ["sensor", "binary_sensor"]
+PLATFORMS = ["sensor", "binary_sensor", "number"]

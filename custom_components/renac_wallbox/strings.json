@@ -76,12 +76,14 @@
           "three_phase": "Three phase"
         }
       },
-      "max_cur": { "name": "Max current limit" },
       "max_power": { "name": "Max power limit" },
       "pv_min_solar_power": { "name": "PV min. solar power threshold" }
     },
     "binary_sensor": {
       "charger_fault": { "name": "Fault" }
+    },
+    "number": {
+      "max_current_setting": { "name": "Max current limit" }
     }
   }
 }

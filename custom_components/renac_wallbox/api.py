@@ -238,6 +238,62 @@ class RenacApiClient:
         """
         return await self._request("api/charging/index", {"inv_sn": inv_sn})
 
+    async def async_get_charging_basic(self, inv_sn: str) -> dict[str, Any]:
+        """Wallbox "basic settings" snapshot (api/charging/basic).
+
+        Derived directly from the settings form component's `readBasic()`
+        method (decompiled JS, not live-captured -- see docs/API.md §2.10
+        for confidence level and full writeup).
+
+        Request: {"inv_sn": "<serial>"}
+        Response (`data`) includes at least: charing_mode (int, note the
+        SPA's own typo -- not "charging_mode"), rfid, max_output_cur (A),
+        protect_temp (°C), max_input_power, allow_charging_time_begin/
+        _end, external_cur_sampling, meter_address, rate_number, and
+        rate{N}_time_begin / rate{N}_time_end / rate{N}_rate for
+        N in 1..rate_number (time-of-use tariff schedule).
+        """
+        return await self._request("api/charging/basic", {"inv_sn": inv_sn})
+
+    async def async_set_charging_basic(
+        self, inv_sn: str, fields: dict[str, Any]
+    ) -> None:
+        """Write one or more "basic settings" fields (api/charging/set, type=2).
+
+        Derived directly from the settings form's `setMode(2)` method: it
+        diffs the form against the last-read snapshot and submits only
+        the changed field names/values as parallel comma-joined lists.
+        Confirmed field name for the current limit: `max_output_cur`.
+
+        Request: {"equ_sn": "<serial>", "type": 2,
+                  "ids": "field_a,field_b", "params": "value_a,value_b"}
+        Response: standard {"code": 1, ...} envelope; no meaningful data.
+
+        Derived from decompiled JS, not live-captured -- see docs/API.md
+        §2.10. Verify against your own account before trusting it in
+        production; an incorrect field name is silently ignored by the
+        API rather than rejected, based on how the SPA only ever submits
+        real, known field names.
+        """
+        def _fmt(value: Any) -> str:
+            # Match how the SPA's own JS numbers serialize (16, not
+            # 16.0) when a HA NumberEntity hands us a whole-number float.
+            if isinstance(value, float) and value.is_integer():
+                return str(int(value))
+            return str(value)
+
+        payload = {
+            "equ_sn": inv_sn,
+            "type": 2,
+            "ids": ",".join(fields.keys()),
+            "params": ",".join(_fmt(v) for v in fields.values()),
+        }
+        await self._request("api/charging/set", payload)
+
+    async def async_set_max_current(self, inv_sn: str, amps: float) -> None:
+        """Convenience wrapper: set the wallbox's max output current (A)."""
+        await self.async_set_charging_basic(inv_sn, {"max_output_cur": amps})
+
     async def async_get_equip_stat(self, user_id: int, station_id: int) -> dict[str, Any]:
         """Online/offline/alarm device counts for a station (confirmed).
 
