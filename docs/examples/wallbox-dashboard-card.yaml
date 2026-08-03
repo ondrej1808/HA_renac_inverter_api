@@ -1,0 +1,63 @@
+# Example Lovelace card grouping the RENAC Wallbox integration's key
+# controls and sensors under one titled card, instead of relying on the
+# default per-domain ordering of Home Assistant's auto-generated device/
+# area view (which always shows sensor -> binary_sensor -> number ->
+# select -> switch -> time, so e.g. the "Charging" switch can never sit
+# next to the "Max current limit" number there).
+#
+# How to use:
+#   1. Settings -> Dashboards -> pick a dashboard -> Edit Dashboard
+#      (or open any existing view) -> Add Card -> scroll to the bottom
+#      -> "Manual" -> paste this YAML.
+#   2. Replace every entity ID below with your own (Settings -> Devices
+#      & Services -> RENAC Wallbox -> your device -> hover each entity
+#      to see its real entity_id, or check Settings -> Entities and
+#      filter by "wallbox"). The placeholders here use the sanitized
+#      naming from README.md/docs/API.md, not a real account's IDs.
+#   3. Tiles stay individually interactive: tapping "Charge mode" opens
+#      the dropdown inline, tapping the current number opens a stepper,
+#      no more-info dialog needed for either.
+#
+# Tip: if you'd rather see this as a genuinely single card (list style,
+# entities open a dialog to edit instead of inline controls), swap
+# `type: grid` + the nested `type: tile` cards for a single
+# `type: entities` card with the same `entities:` list -- see
+# README.md / docs/API.md for both options side by side.
+
+type: grid
+title: Wallbox 000000
+columns: 2
+square: false
+cards:
+  - type: tile
+    entity: switch.wallbox_000000_charging
+    name: Charging
+  - type: tile
+    entity: number.wallbox_000000_max_current_limit
+    name: Max current limit
+  - type: tile
+    entity: select.wallbox_000000_charge_mode
+    name: Charge mode
+  - type: tile
+    entity: sensor.wallbox_000000_state
+    name: State
+  - type: tile
+    entity: sensor.wallbox_000000_power
+  - type: tile
+    entity: sensor.wallbox_000000_voltage
+  - type: tile
+    entity: sensor.wallbox_000000_current
+  - type: tile
+    entity: sensor.wallbox_000000_total_energy
+  - type: tile
+    entity: sensor.wallbox_000000_session_energy
+  - type: tile
+    entity: sensor.wallbox_000000_total_cost
+  - type: tile
+    entity: sensor.wallbox_000000_session_cost
+  - type: tile
+    entity: sensor.wallbox_000000_session_duration
+  - type: tile
+    entity: sensor.wallbox_000000_phase
+  - type: tile
+    entity: binary_sensor.wallbox_000000_fault

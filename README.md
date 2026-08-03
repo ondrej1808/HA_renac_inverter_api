@@ -94,7 +94,9 @@ Polling interval defaults to 10s and can be changed afterwards -- either as a `n
 
 **Editable settings** — 24 more entities across `number`/`select`/`switch`/`time` (max current, protect temperature, meter address, charge mode, PV boost, off-peak schedule, load balancing, fast-charge schedule, and more). ⚠️ These were derived from decompiled JS and tested end-to-end against a mock server (no errors, correct payloads confirmed) but **not yet against a real account** — see the full field-by-field table in [docs/API.md §2.10](docs/API.md) before relying on them, and start with something low-risk (like the meter address) rather than current/power settings.
 
-**Security, in short:** the RENAC login endpoint accepts a plaintext password over HTTPS (no client-side hashing to preserve). This integration only ever *reads* data — it never writes to `api/charging/set` or any other control endpoint. See [docs/API.md §4.1](docs/API.md) for the full write-up.
+**Security, in short:** the RENAC login endpoint accepts a plaintext password over HTTPS (no client-side hashing to preserve). This integration does write to your wallbox now (charging on/off is live-confirmed; the other 24 settings entities are not yet) — see [docs/API.md §2.10–2.11](docs/API.md) for exactly what each write does and its confidence level before flipping anything current/power-related.
+
+**Dashboard tip:** Home Assistant's default device view always groups entities by domain (sensors, then numbers, then selects, then switches...), so e.g. the `Charging` switch can never sit next to `Max current limit`. [`docs/examples/wallbox-dashboard-card.yaml`](docs/examples/wallbox-dashboard-card.yaml) is a ready-to-paste custom card (Add Card → Manual) that groups the controls and key sensors under one titled card in whatever order you want.
 
 ## License
 
@@ -199,7 +201,9 @@ Výchozí interval dotazování je 10 s, lze změnit později — buď přímo e
 
 **Editovatelná nastavení** — 24 dalších entit napříč `number`/`select`/`switch`/`time` (max. proud, ochranná teplota, adresa elektroměru, režim nabíjení, PV boost, rozvrh nízkého tarifu, vyvažování zátěže, plán rychlého nabíjení a další). ⚠️ Byla odvozena z dekompilovaného JS a otestována end-to-end proti mock serveru (bez chyb, správný payload potvrzen), ale **zatím ne proti reálnému účtu** — kompletní tabulku pole po poli najdete v [docs/API.md §2.10](docs/API.md), než se na ně spolehnete, a začněte něčím nízkorizikovým (třeba adresou elektroměru), ne nastavením proudu/výkonu.
 
-**Bezpečnost ve zkratce:** přihlašovací endpoint RENAC přijímá heslo v čistém textu přes HTTPS (na klientovi není žádné hashování, které by bylo třeba zachovat). Tato integrace pouze *čte* data — nikdy nezapisuje do `api/charging/set` ani jiného řídicího endpointu. Kompletní rozbor viz [docs/API.md §4.1](docs/API.md).
+**Bezpečnost ve zkratce:** přihlašovací endpoint RENAC přijímá heslo v čistém textu přes HTTPS (na klientovi není žádné hashování, které by bylo třeba zachovat). Tato integrace už do wallboxu i zapisuje (zapnutí/vypnutí nabíjení je ověřeno naživo; zbylých 24 nastavovacích entit zatím ne) — přesně co který zápis dělá a jak moc je ověřený viz [docs/API.md §2.10–2.11](docs/API.md), než budete přepínat cokoliv souvisejícího s proudem/výkonem.
+
+**Tip na dashboard:** výchozí zobrazení zařízení v Home Assistant vždy řadí entity podle domény (nejdřív senzory, pak čísla, pak výběry, pak přepínače...), takže třeba přepínač `Charging` nikdy nebude vedle `Max current limit`. [`docs/examples/wallbox-dashboard-card.yaml`](docs/examples/wallbox-dashboard-card.yaml) je hotová karta k vložení (Přidat kartu → Ruční), která seskupí ovládání a klíčové senzory pod jeden pojmenovaný blok v pořadí, jaké chcete.
 
 ## Licence
 
