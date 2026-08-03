@@ -33,19 +33,43 @@ This repository is a valid **HACS custom repository** (see [`hacs.json`](hacs.js
 
 *(Manual, non-HACS installation is also possible — see §3.1.)*
 
-<details>
-<summary><strong>Screenshots of the full flow (click to expand)</strong></summary>
+**Screenshots of the full flow:**
 
-| | |
-|---|---|
-| **1. HACS in the sidebar** once installed and authorized against GitHub.<br>![HACS in the sidebar](docs/images/hacs-install/01-dashboard-hacs-menu.png) | **2. HACS → ⋮ → Custom repositories**<br>![HACS custom repositories menu](docs/images/hacs-install/02-hacs-store-custom-repos-menu.png) |
-| **3. Add this repo** as an Integration-type custom repository.<br>![Add custom repository dialog](docs/images/hacs-install/03-add-custom-repository-dialog.png) | **4. Search "renac"** in HACS to find it.<br>![Search renac in HACS](docs/images/hacs-install/04-search-renac-in-hacs.png) |
-| **5. Download** the integration.<br>![Download confirmation dialog](docs/images/hacs-install/05-download-confirm-dialog.png) | **6. HACS flags that a restart is required.**<br>![Restart required repair](docs/images/hacs-install/06-restart-required-repair.png) |
-| **7. Settings, before restart** — the repair item is queued.<br>![Settings before restart](docs/images/hacs-install/07-nastaveni-before-restart.png) | **8. Settings, after restart** — repair cleared, HA confirms it restarted.<br>![Settings after restart](docs/images/hacs-install/08-nastaveni-after-restart.png) |
-| **9. Devices & Services → Add Integration.**<br>![Add integration button](docs/images/hacs-install/09-integrations-add-button.png) | **10. Search "renac"** in the brand picker.<br>![Select brand: search renac](docs/images/hacs-install/10-select-brand-search-renac.png) |
-| **11. The config flow form** — base URL is pre-filled, enter your RENAC email/password here.<br>![Config flow connect form](docs/images/hacs-install/11-config-flow-connect-form.png) | **12. Optional device naming/area step**, then finish.<br>![Device naming and area assignment](docs/images/hacs-install/12-device-name-assignment.png) |
+**1. HACS in the sidebar** once installed and authorized against GitHub.
+![HACS in the sidebar](docs/images/hacs-install/01-dashboard-hacs-menu.png)
 
-</details>
+**2. HACS → ⋮ → Custom repositories**
+![HACS custom repositories menu](docs/images/hacs-install/02-hacs-store-custom-repos-menu.png)
+
+**3. Add this repo** as an Integration-type custom repository.
+![Add custom repository dialog](docs/images/hacs-install/03-add-custom-repository-dialog.png)
+
+**4. Search "renac"** in HACS to find it.
+![Search renac in HACS](docs/images/hacs-install/04-search-renac-in-hacs.png)
+
+**5. Download** the integration.
+![Download confirmation dialog](docs/images/hacs-install/05-download-confirm-dialog.png)
+
+**6. HACS flags that a restart is required.**
+![Restart required repair](docs/images/hacs-install/06-restart-required-repair.png)
+
+**7. Settings, before restart** — the repair item is queued.
+![Settings before restart](docs/images/hacs-install/07-nastaveni-before-restart.png)
+
+**8. Settings, after restart** — repair cleared, HA confirms it restarted.
+![Settings after restart](docs/images/hacs-install/08-nastaveni-after-restart.png)
+
+**9. Devices & Services → Add Integration.**
+![Add integration button](docs/images/hacs-install/09-integrations-add-button.png)
+
+**10. Search "renac"** in the brand picker.
+![Select brand: search renac](docs/images/hacs-install/10-select-brand-search-renac.png)
+
+**11. The config flow form** — base URL is pre-filled, enter your RENAC email/password here.
+![Config flow connect form](docs/images/hacs-install/11-config-flow-connect-form.png)
+
+**12. Optional device naming/area step**, then finish.
+![Device naming and area assignment](docs/images/hacs-install/12-device-name-assignment.png)
 
 ---
 
@@ -419,19 +443,43 @@ Tento repozitář je platný **vlastní (custom) repozitář HACS** (viz [`hacs.
 
 *(Ruční instalace bez HACS je také možná — viz §3.1.)*
 
-<details>
-<summary><strong>Screenshoty celého postupu (klikněte pro rozbalení)</strong></summary>
+**Screenshoty celého postupu:**
 
-| | |
-|---|---|
-| **1. HACS v levém menu** po instalaci a autorizaci přes GitHub.<br>![HACS v menu](docs/images/hacs-install/01-dashboard-hacs-menu.png) | **2. HACS → ⋮ → Vlastní repozitáře**<br>![Menu vlastních repozitářů HACS](docs/images/hacs-install/02-hacs-store-custom-repos-menu.png) |
-| **3. Přidejte tento repozitář** jako vlastní repozitář typu Integrace.<br>![Dialog přidání vlastního repozitáře](docs/images/hacs-install/03-add-custom-repository-dialog.png) | **4. Vyhledejte "renac"** v HACS.<br>![Vyhledávání renac v HACS](docs/images/hacs-install/04-search-renac-in-hacs.png) |
-| **5. Stáhněte** integraci.<br>![Potvrzovací dialog stažení](docs/images/hacs-install/05-download-confirm-dialog.png) | **6. HACS nahlásí, že je potřeba restart.**<br>![Vyžadován restart](docs/images/hacs-install/06-restart-required-repair.png) |
-| **7. Nastavení, před restartem** — oprava čeká ve frontě.<br>![Nastavení před restartem](docs/images/hacs-install/07-nastaveni-before-restart.png) | **8. Nastavení, po restartu** — oprava zmizela, HA potvrzuje restart.<br>![Nastavení po restartu](docs/images/hacs-install/08-nastaveni-after-restart.png) |
-| **9. Zařízení a služby → Přidat integraci.**<br>![Tlačítko přidat integraci](docs/images/hacs-install/09-integrations-add-button.png) | **10. Vyhledejte "renac"** ve výběru značky.<br>![Výběr značky, vyhledávání renac](docs/images/hacs-install/10-select-brand-search-renac.png) |
-| **11. Formulář config flow** — základní URL je přednastavená, sem zadáte svůj RENAC e-mail/heslo.<br>![Formulář config flow](docs/images/hacs-install/11-config-flow-connect-form.png) | **12. Volitelný krok pojmenování zařízení/oblasti**, pak dokončit.<br>![Pojmenování zařízení a přiřazení oblasti](docs/images/hacs-install/12-device-name-assignment.png) |
+**1. HACS v levém menu** po instalaci a autorizaci přes GitHub.
+![HACS v menu](docs/images/hacs-install/01-dashboard-hacs-menu.png)
 
-</details>
+**2. HACS → ⋮ → Vlastní repozitáře**
+![Menu vlastních repozitářů HACS](docs/images/hacs-install/02-hacs-store-custom-repos-menu.png)
+
+**3. Přidejte tento repozitář** jako vlastní repozitář typu Integrace.
+![Dialog přidání vlastního repozitáře](docs/images/hacs-install/03-add-custom-repository-dialog.png)
+
+**4. Vyhledejte "renac"** v HACS.
+![Vyhledávání renac v HACS](docs/images/hacs-install/04-search-renac-in-hacs.png)
+
+**5. Stáhněte** integraci.
+![Potvrzovací dialog stažení](docs/images/hacs-install/05-download-confirm-dialog.png)
+
+**6. HACS nahlásí, že je potřeba restart.**
+![Vyžadován restart](docs/images/hacs-install/06-restart-required-repair.png)
+
+**7. Nastavení, před restartem** — oprava čeká ve frontě.
+![Nastavení před restartem](docs/images/hacs-install/07-nastaveni-before-restart.png)
+
+**8. Nastavení, po restartu** — oprava zmizela, HA potvrzuje restart.
+![Nastavení po restartu](docs/images/hacs-install/08-nastaveni-after-restart.png)
+
+**9. Zařízení a služby → Přidat integraci.**
+![Tlačítko přidat integraci](docs/images/hacs-install/09-integrations-add-button.png)
+
+**10. Vyhledejte "renac"** ve výběru značky.
+![Výběr značky, vyhledávání renac](docs/images/hacs-install/10-select-brand-search-renac.png)
+
+**11. Formulář config flow** — základní URL je přednastavená, sem zadáte svůj RENAC e-mail/heslo.
+![Formulář config flow](docs/images/hacs-install/11-config-flow-connect-form.png)
+
+**12. Volitelný krok pojmenování zařízení/oblasti**, pak dokončit.
+![Pojmenování zařízení a přiřazení oblasti](docs/images/hacs-install/12-device-name-assignment.png)
 
 ## 1. Stav
 
