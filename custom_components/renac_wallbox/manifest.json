@@ -1,0 +1,11 @@
+{
+  "domain": "renac_wallbox",
+  "name": "RENAC Wallbox",
+  "codeowners": ["@ondrej1808"],
+  "config_flow": true,
+  "documentation": "https://github.com/ondrej1808/HA_renac_inverter_api",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/ondrej1808/HA_renac_inverter_api/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

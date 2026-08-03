@@ -1,0 +1,87 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Připojení k cloudu RENAC",
+        "description": "Zadejte stejný e-mail a heslo, jaké používáte pro přihlášení na seceu.renacpower.com (případně na vašem regionálním portálu RENAC).",
+        "data": {
+          "base_url": "Základní URL API (region)",
+          "email": "E-mail",
+          "password": "Heslo"
+        }
+      },
+      "station": {
+        "title": "Vyberte wallbox stanici",
+        "data": {
+          "station_id": "Stanice"
+        }
+      },
+      "device": {
+        "title": "Vyberte wallbox zařízení",
+        "data": {
+          "inv_sn": "Sériové číslo zařízení"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Neplatný e-mail nebo heslo.",
+      "cannot_connect": "Nepodařilo se spojit s API cloudu RENAC.",
+      "no_wallbox_stations": "Na tomto účtu nebyla nalezena žádná stanice typu wallbox (AC nabíjecí stanice).",
+      "no_devices_found": "Pro tuto stanici nebylo nalezeno žádné sériové číslo wallboxu."
+    },
+    "abort": {
+      "already_configured": "Tento wallbox je již nakonfigurován."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval_seconds": "Interval dotazování (sekundy)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "charger_power": { "name": "Výkon" },
+      "charger_vol": { "name": "Napětí" },
+      "charger_cur": { "name": "Proud" },
+      "charger_total_energy": { "name": "Celková energie" },
+      "charger_per_energy": { "name": "Energie relace" },
+      "charger_total_cost": { "name": "Celkové náklady" },
+      "charger_per_cost": { "name": "Náklady relace" },
+      "charger_per_time": { "name": "Doba trvání relace" },
+      "charge_state": {
+        "name": "Stav",
+        "state": {
+          "idle": "Nečinný",
+          "plugged_in": "Připojeno, nenabíjí se",
+          "charging": "Nabíjí se",
+          "fault": "Porucha"
+        }
+      },
+      "charge_mode": {
+        "name": "Režim nabíjení",
+        "state": {
+          "fast": "Rychlé",
+          "pv": "Solární (FVE)",
+          "off_peak": "Nízký tarif"
+        }
+      },
+      "charge_phase": {
+        "name": "Fáze",
+        "state": {
+          "single_phase": "Jednofázové",
+          "three_phase": "Třífázové"
+        }
+      },
+      "max_cur": { "name": "Limit max. proudu" },
+      "max_power": { "name": "Limit max. výkonu" },
+      "pv_min_solar_power": { "name": "PV min. práh solárního výkonu" }
+    },
+    "binary_sensor": {
+      "charger_fault": { "name": "Porucha" }
+    }
+  }
+}

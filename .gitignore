@@ -1,0 +1,15 @@
+# Never commit captured browser traffic — it can contain live session
+# tokens, account identifiers, or other credentials.
+*.har
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# Local tooling metadata, not part of the deliverable
+.megamemory/
+

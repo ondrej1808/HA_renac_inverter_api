@@ -1,0 +1,87 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to RENAC cloud",
+        "description": "Enter the same email and password you use to log in at seceu.renacpower.com (or your regional RENAC portal).",
+        "data": {
+          "base_url": "API base URL (region)",
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "station": {
+        "title": "Choose a wallbox station",
+        "data": {
+          "station_id": "Station"
+        }
+      },
+      "device": {
+        "title": "Choose a wallbox device",
+        "data": {
+          "inv_sn": "Device serial number"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Could not reach the RENAC cloud API.",
+      "no_wallbox_stations": "No wallbox (AC charging pile) stations were found on this account.",
+      "no_devices_found": "No wallbox device serial number was found for this station."
+    },
+    "abort": {
+      "already_configured": "This wallbox is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval_seconds": "Polling interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "charger_power": { "name": "Power" },
+      "charger_vol": { "name": "Voltage" },
+      "charger_cur": { "name": "Current" },
+      "charger_total_energy": { "name": "Total energy" },
+      "charger_per_energy": { "name": "Session energy" },
+      "charger_total_cost": { "name": "Total cost" },
+      "charger_per_cost": { "name": "Session cost" },
+      "charger_per_time": { "name": "Session duration" },
+      "charge_state": {
+        "name": "State",
+        "state": {
+          "idle": "Idle",
+          "plugged_in": "Plugged in, not charging",
+          "charging": "Charging",
+          "fault": "Fault"
+        }
+      },
+      "charge_mode": {
+        "name": "Charge mode",
+        "state": {
+          "fast": "Fast",
+          "pv": "Solar (PV)",
+          "off_peak": "Off-peak"
+        }
+      },
+      "charge_phase": {
+        "name": "Phase",
+        "state": {
+          "single_phase": "Single phase",
+          "three_phase": "Three phase"
+        }
+      },
+      "max_cur": { "name": "Max current limit" },
+      "max_power": { "name": "Max power limit" },
+      "pv_min_solar_power": { "name": "PV min. solar power threshold" }
+    },
+    "binary_sensor": {
+      "charger_fault": { "name": "Fault" }
+    }
+  }
+}
