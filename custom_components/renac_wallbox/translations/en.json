@@ -61,14 +61,6 @@
           "fault": "Fault"
         }
       },
-      "charge_mode": {
-        "name": "Charge mode",
-        "state": {
-          "fast": "Fast",
-          "pv": "Solar (PV)",
-          "off_peak": "Off-peak"
-        }
-      },
       "charge_phase": {
         "name": "Phase",
         "state": {
@@ -83,7 +75,76 @@
       "charger_fault": { "name": "Fault" }
     },
     "number": {
-      "max_current_setting": { "name": "Max current limit" }
+      "max_current_setting": { "name": "Max current limit" },
+      "protect_temp": { "name": "Protect temperature" },
+      "meter_address": { "name": "Meter address" },
+      "pv_min_solar_power_setting": { "name": "PV min. solar power" },
+      "pv_manual_energy": { "name": "PV manual boost energy target" },
+      "pv_auto_energy": { "name": "PV intelligent boost energy target" },
+      "off_peak_auto_energy": { "name": "Off-peak boost energy target" },
+      "balance_power": { "name": "Load balance power" },
+      "fast_preset_energy": { "name": "Fast charge energy target" },
+      "fast_preset_cost": { "name": "Fast charge cost target" }
+    },
+    "select": {
+      "charger_mode_select": {
+        "name": "Charge mode",
+        "state": {
+          "fast": "Fast",
+          "pv": "Solar (PV)",
+          "off_peak": "Off-peak"
+        }
+      },
+      "basic_charge_auth_mode": {
+        "name": "Charge authorization",
+        "state": {
+          "app": "App",
+          "rfid_card": "RFID card",
+          "plug_and_charge": "Plug and charge"
+        }
+      },
+      "external_cur_sampling": {
+        "name": "External current sampling",
+        "state": {
+          "none": "None",
+          "ct_connected": "CT connected",
+          "smart_meter": "Smart meter",
+          "single_phase_hybrid": "Single-phase hybrid inverter",
+          "three_phase_hybrid": "Three-phase hybrid inverter"
+        }
+      },
+      "pv_boost_mode": {
+        "name": "PV boost mode",
+        "state": {
+          "off": "Off",
+          "manual": "Manual",
+          "intelligent": "Intelligent"
+        }
+      },
+      "fast_charge_plan": {
+        "name": "Fast charge plan",
+        "state": {
+          "time": "Preset time",
+          "energy": "Preset energy",
+          "cost": "Preset cost"
+        }
+      }
+    },
+    "switch": {
+      "pv_import_grid": { "name": "PV allow grid import" },
+      "off_peak_boost": { "name": "Off-peak boost" },
+      "load_balance_enabled": { "name": "Load balance" }
+    },
+    "time": {
+      "allow_charging_time_begin": { "name": "Allowed charging window start" },
+      "allow_charging_time_end": { "name": "Allowed charging window end" },
+      "fast_time_begintime": { "name": "Fast charge (preset time) start" },
+      "fast_energy_begintime": { "name": "Fast charge (preset energy) start" },
+      "fast_cost_begintime": { "name": "Fast charge (preset cost) start" },
+      "pv_start_time": { "name": "PV manual boost start" },
+      "pv_stop_time": { "name": "PV manual boost stop" },
+      "pv_auto_time": { "name": "PV intelligent boost end" },
+      "off_peak_auto_time": { "name": "Off-peak boost end" }
     }
   }
 }

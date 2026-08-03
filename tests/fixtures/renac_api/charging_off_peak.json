@@ -1,0 +1,13 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "inv_sn": "ABC0123456DEF789",
+    "boost": 0,
+    "peak_time": "0,0,0,0",
+    "auto_time": "00:00",
+    "auto_energy": 0,
+    "balance": 0,
+    "balance_power": 0
+  }
+}

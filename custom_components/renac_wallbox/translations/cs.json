@@ -61,14 +61,6 @@
           "fault": "Porucha"
         }
       },
-      "charge_mode": {
-        "name": "Režim nabíjení",
-        "state": {
-          "fast": "Rychlé",
-          "pv": "Solární (FVE)",
-          "off_peak": "Nízký tarif"
-        }
-      },
       "charge_phase": {
         "name": "Fáze",
         "state": {
@@ -83,7 +75,76 @@
       "charger_fault": { "name": "Porucha" }
     },
     "number": {
-      "max_current_setting": { "name": "Limit max. proudu" }
+      "max_current_setting": { "name": "Limit max. proudu" },
+      "protect_temp": { "name": "Ochranná teplota" },
+      "meter_address": { "name": "Adresa elektroměru" },
+      "pv_min_solar_power_setting": { "name": "PV min. solární výkon" },
+      "pv_manual_energy": { "name": "PV cíl energie ručního boostu" },
+      "pv_auto_energy": { "name": "PV cíl energie inteligentního boostu" },
+      "off_peak_auto_energy": { "name": "Cíl energie boostu v nízkém tarifu" },
+      "balance_power": { "name": "Výkon vyvažování zátěže" },
+      "fast_preset_energy": { "name": "Cíl energie rychlého nabíjení" },
+      "fast_preset_cost": { "name": "Cíl nákladů rychlého nabíjení" }
+    },
+    "select": {
+      "charger_mode_select": {
+        "name": "Režim nabíjení",
+        "state": {
+          "fast": "Rychlé",
+          "pv": "Solární (FVE)",
+          "off_peak": "Nízký tarif"
+        }
+      },
+      "basic_charge_auth_mode": {
+        "name": "Autorizace nabíjení",
+        "state": {
+          "app": "Aplikace",
+          "rfid_card": "RFID karta",
+          "plug_and_charge": "Připojit a nabíjet"
+        }
+      },
+      "external_cur_sampling": {
+        "name": "Externí snímání proudu",
+        "state": {
+          "none": "Žádné",
+          "ct_connected": "Připojen proudový senzor (CT)",
+          "smart_meter": "Chytrý elektroměr",
+          "single_phase_hybrid": "Jednofázový hybridní měnič",
+          "three_phase_hybrid": "Třífázový hybridní měnič"
+        }
+      },
+      "pv_boost_mode": {
+        "name": "Režim PV boostu",
+        "state": {
+          "off": "Vypnuto",
+          "manual": "Ruční",
+          "intelligent": "Inteligentní"
+        }
+      },
+      "fast_charge_plan": {
+        "name": "Plán rychlého nabíjení",
+        "state": {
+          "time": "Přednastavený čas",
+          "energy": "Přednastavená energie",
+          "cost": "Přednastavené náklady"
+        }
+      }
+    },
+    "switch": {
+      "pv_import_grid": { "name": "PV povolit odběr ze sítě" },
+      "off_peak_boost": { "name": "Boost v nízkém tarifu" },
+      "load_balance_enabled": { "name": "Vyvažování zátěže" }
+    },
+    "time": {
+      "allow_charging_time_begin": { "name": "Začátek povoleného okna nabíjení" },
+      "allow_charging_time_end": { "name": "Konec povoleného okna nabíjení" },
+      "fast_time_begintime": { "name": "Rychlé nabíjení (čas) – začátek" },
+      "fast_energy_begintime": { "name": "Rychlé nabíjení (energie) – začátek" },
+      "fast_cost_begintime": { "name": "Rychlé nabíjení (náklady) – začátek" },
+      "pv_start_time": { "name": "PV ruční boost – začátek" },
+      "pv_stop_time": { "name": "PV ruční boost – konec" },
+      "pv_auto_time": { "name": "PV inteligentní boost – konec" },
+      "off_peak_auto_time": { "name": "Boost v nízkém tarifu – konec" }
     }
   }
 }

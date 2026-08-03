@@ -24,7 +24,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CHARGE_MODES, CHARGE_PHASES, CHARGE_STATES, CONF_STATION_NAME, DOMAIN
+from .const import CHARGE_PHASES, CHARGE_STATES, CONF_STATION_NAME, DOMAIN
 from .coordinator import RenacWallboxCoordinator
 
 
@@ -104,13 +104,9 @@ SENSOR_DESCRIPTIONS: tuple[RenacSensorDescription, ...] = (
         options=sorted(set(CHARGE_STATES.values())),
         value_fn=lambda data: CHARGE_STATES.get(data.get("state2")),
     ),
-    RenacSensorDescription(
-        key="mode",
-        translation_key="charge_mode",
-        device_class=SensorDeviceClass.ENUM,
-        options=sorted(set(CHARGE_MODES.values())),
-        value_fn=lambda data: CHARGE_MODES.get(data.get("mode")),
-    ),
+    # mode is intentionally not exposed as a sensor: it's now the
+    # writable `select.*_charger_mode_select` entity (see select.py),
+    # which also displays the current value.
     RenacSensorDescription(
         key="phase",
         translation_key="charge_phase",
@@ -143,7 +139,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: RenacWallboxCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: RenacWallboxCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     async_add_entities(
         RenacSensor(coordinator, entry, description)
         for description in SENSOR_DESCRIPTIONS

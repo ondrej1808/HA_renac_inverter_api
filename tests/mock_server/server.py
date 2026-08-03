@@ -31,11 +31,23 @@ def load(name: str) -> dict:
 
 
 # Mutable in-memory state so a charging/set write is actually reflected
-# by subsequent charging/index and charging/basic reads -- lets the
-# Docker e2e test verify the full number-entity round trip, not just
-# that the write call returns code=1.
+# by subsequent reads -- lets the Docker e2e test verify the full
+# entity round trip, not just that the write call returns code=1.
 _charging_index_state = load("charging_index.json")["data"]
 _charging_basic_state = load("charging_basic.json")["data"]
+_charging_fast_state = load("charging_fast.json")["data"]
+_charging_pv_state = load("charging_pv.json")["data"]
+_charging_off_peak_state = load("charging_off_peak.json")["data"]
+
+# api/charging/set `type` -> which state dict its `ids` write into.
+_SET_TYPE_STATE = {
+    1: _charging_basic_state,  # rfid
+    2: _charging_basic_state,
+    3: _charging_index_state,  # charger_mode (mirrors into `mode`, see below)
+    4: _charging_fast_state,
+    5: _charging_pv_state,
+    6: _charging_off_peak_state,
+}
 
 
 def check_signature(request: web.Request) -> web.Response | None:
@@ -79,11 +91,37 @@ async def charging_basic(request: web.Request) -> web.Response:
     return web.json_response({"code": 1, "msg": "0000", "data": _charging_basic_state})
 
 
+async def charging_fast(request: web.Request) -> web.Response:
+    if (err := check_signature(request)) is not None:
+        return err
+    _LOGGER.info("POST /api/charging/fast")
+    return web.json_response({"code": 1, "msg": "0000", "data": _charging_fast_state})
+
+
+async def charging_pv(request: web.Request) -> web.Response:
+    if (err := check_signature(request)) is not None:
+        return err
+    _LOGGER.info("POST /api/charging/pv")
+    return web.json_response({"code": 1, "msg": "0000", "data": _charging_pv_state})
+
+
+async def charging_off_peak(request: web.Request) -> web.Response:
+    if (err := check_signature(request)) is not None:
+        return err
+    _LOGGER.info("POST /api/charging/off-peak")
+    return web.json_response({"code": 1, "msg": "0000", "data": _charging_off_peak_state})
+
+
 async def charging_set(request: web.Request) -> web.Response:
     if (err := check_signature(request)) is not None:
         return err
     body = await request.json()
     _LOGGER.info("POST /api/charging/set body=%s", body)
+    set_type = body.get("type")
+    state = _SET_TYPE_STATE.get(set_type)
+    if state is None:
+        return web.json_response({"code": 400, "msg": "9999", "data": None})
+
     ids = (body.get("ids") or "").split(",")
     params = (body.get("params") or "").split(",")
     for field, value in zip(ids, params):
@@ -95,9 +133,11 @@ async def charging_set(request: web.Request) -> web.Response:
                 value = int(value)
         except ValueError:
             pass
-        _charging_basic_state[field] = value
+        state[field] = value
         if field == "max_output_cur":
             _charging_index_state["max_cur"] = value
+        if field == "charger_mode":
+            _charging_index_state["mode"] = value
     return web.json_response({"code": 1, "msg": "0000", "data": None})
 
 
@@ -137,6 +177,9 @@ def create_app() -> web.Application:
     app.router.add_post("/api/station/list", station_list)
     app.router.add_post("/api/charging/index", charging_index)
     app.router.add_post("/api/charging/basic", charging_basic)
+    app.router.add_post("/api/charging/fast", charging_fast)
+    app.router.add_post("/api/charging/pv", charging_pv)
+    app.router.add_post("/api/charging/off-peak", charging_off_peak)
     app.router.add_post("/api/charging/set", charging_set)
     app.router.add_post("/bg/equList", equ_list)
     app.router.add_post("/api/station/equipStat", equip_stat)

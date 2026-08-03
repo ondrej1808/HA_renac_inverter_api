@@ -255,25 +255,93 @@ class RenacApiClient:
         """
         return await self._request("api/charging/basic", {"inv_sn": inv_sn})
 
-    async def async_set_charging_basic(
-        self, inv_sn: str, fields: dict[str, Any]
+    async def async_get_charging_fast(self, inv_sn: str) -> dict[str, Any]:
+        """Fast-charge schedule snapshot (api/charging/fast, confirmed path
+        from the JS route table; payload derived from decompiled
+        `readFast()` -- see docs/API.md §2.10).
+
+        Request: {"inv_sn": "<serial>"}
+        Response (`data`): {mode (0=time/1=energy/2=cost), time_number,
+        time_begintime, time_day, energy_number, energy_begintime,
+        energy_day, cost_number, cost_begintime, cost_day, inv_sn}.
+        `*_begintime == "255:255"` means "charge immediately on plug-in"
+        (no scheduled start) rather than a literal time.
+        """
+        return await self._request("api/charging/fast", {"inv_sn": inv_sn})
+
+    async def async_get_charging_pv(self, inv_sn: str) -> dict[str, Any]:
+        """PV/solar-boost charge settings snapshot (api/charging/pv,
+        confirmed path; payload derived from decompiled `readPv()`).
+
+        Request: {"inv_sn": "<serial>"}
+        Response (`data`): {import_grid (0/1), min_solar_power (0-22000 W),
+        boost (0=off/1=manual/2=intelligent), manual_energy, start_time,
+        stop_time, auto_time, auto_energy, inv_sn}.
+        """
+        return await self._request("api/charging/pv", {"inv_sn": inv_sn})
+
+    async def async_get_charging_off_peak(self, inv_sn: str) -> dict[str, Any]:
+        """Off-peak schedule + load-balance settings snapshot
+        (api/charging/off-peak, confirmed path; payload derived from
+        decompiled `readOffPeak()`).
+
+        Request: {"inv_sn": "<serial>"}
+        Response (`data`): {boost (0/1), peak_time (comma-joined 0/1
+        flags, one per configured tariff-rate slot from api/charging/basic
+        §2.10), auto_time, auto_energy, balance (0/1), balance_power (W),
+        inv_sn}.
+        """
+        return await self._request("api/charging/off-peak", {"inv_sn": inv_sn})
+
+    async def async_set_charging(
+        self, inv_sn: str, set_type: int, fields: dict[str, Any]
     ) -> None:
-        """Write one or more "basic settings" fields (api/charging/set, type=2).
+        """Write one or more fields via api/charging/set.
 
-        Derived directly from the settings form's `setMode(2)` method: it
-        diffs the form against the last-read snapshot and submits only
-        the changed field names/values as parallel comma-joined lists.
-        Confirmed field name for the current limit: `max_output_cur`.
+        Every write the wallbox settings form performs goes through this
+        one endpoint, distinguished only by `type`. Derived directly from
+        the settings form's `setMode(t)` method: it diffs the relevant
+        form against the last-read snapshot and submits only the changed
+        field names/values as parallel comma-joined lists. Confirmed
+        field name for the current limit: `max_output_cur` (type 2).
 
-        Request: {"equ_sn": "<serial>", "type": 2,
+        Request: {"equ_sn": "<serial>", "type": <int>,
                   "ids": "field_a,field_b", "params": "value_a,value_b"}
         Response: standard {"code": 1, ...} envelope; no meaningful data.
 
-        Derived from decompiled JS, not live-captured -- see docs/API.md
-        §2.10. Verify against your own account before trusting it in
-        production; an incorrect field name is silently ignored by the
-        API rather than rejected, based on how the SPA only ever submits
-        real, known field names.
+        `type` meanings, all derived from decompiled JS, NONE live-tested
+        except type 2 / max_output_cur -- see docs/API.md §2.10 for the
+        full writeup and per-field confidence notes:
+            1 = RFID card (`rfid`)
+            2 = basic settings (`charing_mode`, `max_output_cur`,
+                `protect_temp`, `max_input_power`,
+                `allow_charging_time_begin`/`_end`,
+                `external_cur_sampling`, `meter_address`, tariff
+                `rate{N}_time_begin`/`_end`/`_rate`)
+            3 = overall charging mode switch (`charger_mode`: 0=fast,
+                1=pv, 2=off_peak)
+            4 = fast-charge schedule (`mode`, plus `time_number`/
+                `time_begintime`/`time_day`, or `energy_number`/
+                `energy_begintime`/`energy_day`, or `cost_number`/
+                `cost_begintime`/`cost_day`, depending on `mode`)
+            5 = PV/solar-boost settings (`import_grid`,
+                `min_solar_power`, `boost`, plus `manual_energy`/
+                `start_time`/`stop_time` when boost=1, or `auto_time`/
+                `auto_energy` when boost=2)
+            6 = off-peak schedule (`boost`, `peak_time`, `auto_time`,
+                `auto_energy`) *and* load balancing (`balance`,
+                `balance_power`) -- the SPA sends both under the same
+                `type: 6`, distinguished only by which `ids` are given.
+
+        The SPA always submits a full tab's worth of fields together
+        (e.g. changing PV mode resends `import_grid`+`min_solar_power`+
+        `boost` even if only one changed); this client instead sends
+        exactly the field(s) you pass in `fields`, on the assumption
+        (confirmed for type 1 / `rfid`, which the SPA itself always
+        sends alone) that the API accepts partial field sets per `type`.
+        Verify against your own account -- if a lone-field write for
+        type 4/5/6 turns out to require its sibling fields too, pass
+        them all explicitly.
         """
         def _fmt(value: Any) -> str:
             # Match how the SPA's own JS numbers serialize (16, not
@@ -284,15 +352,29 @@ class RenacApiClient:
 
         payload = {
             "equ_sn": inv_sn,
-            "type": 2,
+            "type": set_type,
             "ids": ",".join(fields.keys()),
             "params": ",".join(_fmt(v) for v in fields.values()),
         }
         await self._request("api/charging/set", payload)
 
+    async def async_set_charging_basic(
+        self, inv_sn: str, fields: dict[str, Any]
+    ) -> None:
+        """Convenience wrapper: write "basic settings" fields (type=2)."""
+        await self.async_set_charging(inv_sn, 2, fields)
+
     async def async_set_max_current(self, inv_sn: str, amps: float) -> None:
         """Convenience wrapper: set the wallbox's max output current (A)."""
         await self.async_set_charging_basic(inv_sn, {"max_output_cur": amps})
+
+    async def async_set_charger_mode(self, inv_sn: str, mode: int) -> None:
+        """Convenience wrapper: switch overall charging mode (type=3).
+
+        `mode`: 0=fast, 1=pv, 2=off_peak (same enum as api/charging/index
+        `mode` / const.CHARGE_MODES).
+        """
+        await self.async_set_charging(inv_sn, 3, {"charger_mode": mode})
 
     async def async_get_equip_stat(self, user_id: int, station_id: int) -> dict[str, Any]:
         """Online/offline/alarm device counts for a station (confirmed).

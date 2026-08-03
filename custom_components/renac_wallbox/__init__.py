@@ -15,7 +15,7 @@ from .const import (
     DOMAIN,
     PLATFORMS,
 )
-from .coordinator import RenacWallboxCoordinator
+from .coordinator import RenacSettingsCoordinator, RenacWallboxCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -41,7 +41,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    settings_coordinator = RenacSettingsCoordinator(
+        hass, entry, client, inv_sn=entry.data[CONF_INV_SN]
+    )
+    # Best-effort: unconfirmed endpoints (docs/API.md §2.10) should never
+    # block setup of the core (confirmed) read functionality.
+    await settings_coordinator.async_refresh()
+
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
+        "coordinator": coordinator,
+        "settings": settings_coordinator,
+    }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True

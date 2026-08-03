@@ -20,7 +20,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: RenacWallboxCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: RenacWallboxCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     async_add_entities([RenacFaultBinarySensor(coordinator, entry)])
 
 

@@ -1,0 +1,15 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "inv_sn": "ABC0123456DEF789",
+    "import_grid": 1,
+    "min_solar_power": 8000,
+    "boost": 0,
+    "manual_energy": 0,
+    "start_time": null,
+    "stop_time": null,
+    "auto_time": null,
+    "auto_energy": 0
+  }
+}

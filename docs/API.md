@@ -19,8 +19,8 @@ Full reverse-engineered documentation of the RENAC cloud API used by [`custom_co
 | `api/station/equipStat` | ✅ Confirmed (live capture) |
 | `api/charging/equ/charging_record` (session history) | ✅ Confirmed (live capture) |
 | `api/charging/equ/detailChart` (time-series history) | ✅ Confirmed (live capture) |
-| `api/charging/basic` (read settings incl. max current) | ⚠️ Derived from decompiled JS (exact request-building code, not a guessed shape), not live-captured — see §2.10 |
-| `api/charging/set` type=2 (write max current + other settings) | ⚠️ Implemented (`number.*_max_current_limit`), derived from decompiled JS, tested against the Docker mock server but not yet a real account — see §2.10 |
+| `api/charging/basic\|fast\|pv\|off-peak` (read settings) | ⚠️ Derived from decompiled JS (exact request-building code, not a guessed shape), not live-captured — see §2.10 |
+| `api/charging/set` all 6 `type` values (write settings, incl. max current) | ⚠️ 24 entities implemented across `number`/`select`/`switch`/`time`, derived from decompiled JS, tested against the Docker mock server (full read/write round trip, no errors) but not yet a real account — see §2.10 |
 | Home Assistant integration (`custom_components/renac_wallbox/`) | ✅ Read path tested end-to-end against a real RENAC EV-AC3P-11K wallbox via the full HACS install flow; the new write path (max current) is Docker-mock-tested only, not yet live (see §5) |
 | Regions other than Europe | ⚠️ Base URL pattern guessed, unverified |
 
@@ -266,46 +266,44 @@ Per-phase voltage/current is **only** available through this endpoint, not throu
 
 Extracted from the JS route table, listed for completeness / future extension: `api/station/weather`, `api/charging/fast`, `api/charging/pv`, `api/charging/off-peak`, `api/charging/equ/detail` (confirmed via decompiled code to return additional device metadata: `model`, `rated_power`, `reg_time`, `version`, per-phase `charger_vol_a/b/c`, `charger_cur_a/b/c` — not yet wired into the integration), `api/charging/equ/detailChart/export`, `api/user/info`, `api/user/changePwd`, `api/com/getWebVer`.
 
-### 2.10 `POST api/charging/basic` (read) and `POST api/charging/set` type=2 (write) — wallbox settings, incl. max current ⚠️ derived from decompiled JS, not live-captured
+### 2.10 `api/charging/basic|fast|pv|off-peak` (read) and `api/charging/set` (write) — full wallbox settings ⚠️ derived from decompiled JS, not live-captured
 
-Unlike every other endpoint in this document, these two were **not** confirmed by watching a real network request — the setting-change action isn't reachable in the web portal without navigating to a specific device-settings view that a fresh account/session doesn't land on by default, and no HAR of it exists yet. Instead, the exact request-building code was located and read directly: the settings form component (`chunk-184c83ca`, module `fb3b`, decompiled — not the component name itself, which isn't retained by the minifier) binds an `el-input-number` labeled "Max output current (A)" to `basic.max_output_cur`, and its Save button's `setMode(2)` handler diffs the form against the last-read snapshot and submits exactly the changed field names/values. This is stronger evidence than a guessed URL+params shape (it's the literal code that builds the request), but it has not been exercised against the real API — **test carefully, on a wallbox where an unexpected current limit isn't a safety problem, before relying on this.**
+Unlike every other endpoint in this document, this whole section was **not** confirmed by watching a real network request — the settings UI isn't reachable in the web portal without navigating to a specific device-settings view that a fresh account/session doesn't land on by default, and no HAR of it exists yet. Instead, the exact request-building code was located and read directly, in full: the settings form component (Vue component name `SetPile`, in `chunk-184c83ca` module `fb3b`, decompiled) has one `data.field` per input, and every Save button's `setMode(t)` handler diffs its tab's fields against the last-read snapshot and submits exactly what changed via `POST api/charging/set`. This is stronger evidence than a guessed URL+params shape (it's the literal code that builds the request), but it has not been exercised against the real API for anything beyond `max_output_cur` — **test carefully, on a wallbox where an unexpected setting isn't a safety problem, before relying on any of it.** Everything below **has** been verified end-to-end against the Docker mock server (`docker-compose.test.yml`) — a `number`/`select`/`switch`/`time` write reliably produces the exact payload documented here and is reflected back on the next read.
 
-**Read** — `POST api/charging/basic`:
-```json
-{ "inv_sn": "ABC0123456DEF789" }
-```
-Response (`data`), field names read directly from the `readBasic()` method (`Object(o["X"])(...)`, where export `"X"` is bound to the same `api/charging/basic` wrapper function found via static analysis, same technique as §2.5's `bg/equList` correction):
-```json
-{
-  "charing_mode": 1,
-  "rfid": "",
-  "max_output_cur": 7,
-  "protect_temp": 85,
-  "max_input_power": 22000,
-  "allow_charging_time_begin": "00:00",
-  "allow_charging_time_end": "23:59",
-  "external_cur_sampling": 0,
-  "meter_address": 1,
-  "rate_number": 0
-}
-```
-Note `charing_mode` is the SPA's own spelling (missing a "g") — reproduce it verbatim, it is almost certainly what the server expects. `rate_number` indicates how many time-of-use tariff entries follow as `rate{N}_time_begin` / `rate{N}_time_end` / `rate{N}_rate` for `N` in `1..rate_number` (not shown above since this sample has none configured). The sample values above are **not from a live capture** — they were constructed from the field names and plausible defaults, not sanitized real data like everywhere else in this document.
+#### Reads
 
-**Write** — `POST api/charging/set`:
+Four sibling endpoints, each `{"inv_sn": "<serial>"}` in, confirmed field names out (`readBasic()`/`readFast()`/`readPv()`/`readOffPeak()`):
+
+| Endpoint | `data` fields |
+|---|---|
+| `POST api/charging/basic` | `charing_mode` (int; SPA's own spelling, missing a "g" — reproduce verbatim), `rfid`, `max_output_cur` (A), `protect_temp` (°C), `max_input_power`, `allow_charging_time_begin`/`_end` ("HH:mm"), `external_cur_sampling`, `meter_address`, `rate_number`, and `rate{N}_time_begin`/`_end`/`_rate` for `N` in `1..rate_number` (time-of-use tariff schedule) |
+| `POST api/charging/fast` | `mode` (0=preset time/1=preset energy/2=preset cost), `time_number` (minutes), `time_begintime`, `time_day`, `energy_number` (kWh), `energy_begintime`, `energy_day`, `cost_number`, `cost_begintime`, `cost_day` |
+| `POST api/charging/pv` | `import_grid` (0/1), `min_solar_power` (0–22000 W), `boost` (0=off/1=manual/2=intelligent), `manual_energy` (kWh), `start_time`, `stop_time`, `auto_time`, `auto_energy` (kWh) |
+| `POST api/charging/off-peak` | `boost` (0/1), `peak_time` (comma-joined 0/1 flags, one per configured tariff-rate slot from `api/charging/basic`), `auto_time`, `auto_energy` (kWh), `balance` (0/1, load balancing), `balance_power` (W) |
+
+`*_begintime` fields use the sentinel `"255:255"` for "no scheduled start / charge immediately on plug-in" rather than a real time — the web form's "plug and charge" toggle sets this. The sample values in each fixture (`tests/fixtures/renac_api/charging_{basic,fast,pv,off_peak}.json`) are **not from a live capture** — they were constructed from the field names and plausible defaults, not sanitized real data like everywhere else in this document.
+
+#### Write — `POST api/charging/set`
+
 ```json
 { "equ_sn": "ABC0123456DEF789", "type": 2, "ids": "max_output_cur", "params": "16" }
 ```
-Response: the standard `{"code": 1, ...}` envelope with no meaningful `data`.
+Response: the standard `{"code": 1, ...}` envelope with no meaningful `data`. `ids`/`params` are parallel comma-joined lists — multiple fields can be changed in one call. Numbers must be formatted the way JS's own number-to-string conversion would (`16`, not `16.0`) — `RenacApiClient.async_set_charging` handles this.
 
-`ids` and `params` are parallel comma-joined lists — multiple fields can be changed in one call, e.g. `"ids": "max_output_cur,protect_temp", "params": "16,90"`. Only include fields that actually changed (this mirrors what the SPA itself does, via a diff against the last `readBasic()` snapshot — not confirmed to be a hard requirement, but safest to follow). Numbers must be formatted the way JS's own number-to-string conversion would (`16`, not `16.0`) — `RenacApiClient.async_set_charging_basic` handles this.
+Every `type` value observed in `setMode()`, what it writes to, and its confirmation status:
 
-Two other `type` values were also observed in the same `setMode()` method, for completeness (**not implemented, not live-tested**):
-- `type: 1` — RFID card change: `{"equ_sn": "...", "type": 1, "ids": "rfid", "params": "<card id>"}`.
-- `type: 3` — switch which charging-mode tab is active (fast/PV/off-peak): `{"equ_sn": "...", "type": 3, "ids": "charger_mode", "params": "<0|1|2>"}`, matching the `mode` enum in §2.4/const.py.
+| `type` | Group | Fields | HA entity confidence |
+|---|---|---|---|
+| 1 | RFID | `rfid` | Not implemented as an entity (security-sensitive, low value) |
+| 2 | Basic | `charing_mode`, `max_output_cur`, `protect_temp`, `max_input_power`, `allow_charging_time_begin`/`_end`, `external_cur_sampling`, `meter_address`, `rate{N}_*` | `max_output_cur` implemented (`number.*_max_current_limit`); `charing_mode`→`select.*_charge_authorization`, `protect_temp`→`number.*_protect_temperature`, `meter_address`→`number.*_meter_address`, `external_cur_sampling`→`select.*_external_current_sampling`, `allow_charging_time_begin`/`_end`→`time.*` all implemented. `max_input_power` and the `rate{N}_*` tariff schedule are **not** implemented (the latter needs a list-of-slots UI HA doesn't have a clean built-in entity for) |
+| 3 | Overall mode | `charger_mode` (0=fast/1=pv/2=off_peak) | Implemented: `select.*_charge_mode` (reads the realtime `api/charging/index` `mode` field, writes type=3) |
+| 4 | Fast-charge schedule | `mode` (0/1/2) + the matching `time_*`/`energy_*`/`cost_*` trio | `mode`→`select.*_fast_charge_plan`, `energy_number`→`number.*_fast_charge_energy_target`, `cost_number`→`number.*_fast_charge_cost_target`, all three `*_begintime`→`time.*` implemented. `time_number` (a duration, not a clock time) is **not** implemented |
+| 5 | PV/solar-boost | `import_grid`, `min_solar_power`, `boost` (0/1/2), + `manual_energy`/`start_time`/`stop_time` (boost=1) or `auto_time`/`auto_energy` (boost=2) | All fields implemented across `switch.*_pv_allow_grid_import`, `number.*_pv_min_solar_power`, `select.*_pv_boost_mode`, `number.*_pv_manual_boost_energy_target`, `number.*_pv_intelligent_boost_energy_target`, and four `time.*` entities |
+| 6 | Off-peak schedule **and** load balancing (shared `type`, distinguished only by `ids`) | Off-peak: `boost`, `peak_time`, `auto_time`, `auto_energy`. Balance: `balance`, `balance_power` | `boost`→`switch.*_off_peak_boost`, `auto_time`→`time.*_off_peak_boost_end`, `auto_energy`→`number.*_off_peak_boost_energy_target`, `balance`→`switch.*_load_balance`, `balance_power`→`number.*_load_balance_power` implemented. `peak_time` (per-slot tariff selection, needs the `rate{N}_*` schedule from type 2) is **not** implemented |
 
-Other `basic` fields that appear settable via `type: 2` alongside `max_output_cur`, per the same diffing code, but not exposed as HA entities yet: `charing_mode`, `protect_temp`, `max_input_power`, `allow_charging_time_begin`/`_end`, `external_cur_sampling`, `meter_address`, and the `rate{N}_*` time-of-use tariff schedule.
+**A note on partial writes:** the SPA always submits a full tab's worth of fields together (e.g. changing PV mode resends `import_grid`+`min_solar_power`+`boost` even if only one changed). This integration instead sends exactly one field per entity write, on the assumption — confirmed only for `type 1`/`rfid`, which the SPA itself always sends alone — that the API accepts partial field sets per `type`. This was **not** an issue against the Docker mock (which just applies whatever `ids` it's given), but a real account might behave differently; if a lone-field write for type 4/5/6 doesn't take effect, try `RenacApiClient.async_set_charging()` with all of that tab's fields included together.
 
-**Home Assistant integration:** `number.<device>_max_current_limit` (`custom_components/renac_wallbox/number.py`) reads/writes `max_output_cur` through `RenacApiClient.async_set_max_current()`. Min/max bounds (6–32 A) are a conservative guess, not a RENAC-confirmed hardware range — adjust `MIN_CURRENT_A`/`MAX_CURRENT_A` in `number.py` if your device's real range differs. Verified end-to-end against the Docker mock server (round trip: set value → `api/charging/set` call with the exact payload above → mock reflects it → coordinator refresh → entity shows new value), but **not yet against a real account** — do that before treating this as fully confirmed, and update this section (and §1's status table) once you have.
+**Home Assistant integration:** see the file table in §3 — `number.py`, `select.py`, `switch.py`, and `time.py` between them implement 24 read/write entities across all six `type` values, backed by a new `RenacSettingsCoordinator` (`coordinator.py`) that polls `api/charging/basic|fast|pv|off-peak` every 5 minutes (`SETTINGS_SCAN_INTERVAL` in `const.py`) — much slower than the realtime 30s poll, since these change rarely and are unconfirmed-write endpoints. A failure fetching any one settings group is logged and that group's entities simply go `unavailable`, rather than blocking setup of the confirmed read-only sensors. `max_current_limit` and the new `select.*_charge_mode` are the two exceptions: they read from the realtime coordinator instead (faster feedback after a write, and `charge_mode` isn't part of any `charging/basic|fast|pv|off-peak` response anyway). **None of this has been tested against a real account** — do that (starting with something low-risk like `meter_address` or a `select` before anything current/power-related) before treating it as fully confirmed, and update this section and §1's status table once you have.
 
 ---
 
@@ -317,11 +315,14 @@ Code lives in [`custom_components/renac_wallbox/`](../custom_components/renac_wa
 |---|---|
 | [`api.py`](../custom_components/renac_wallbox/api.py) | `RenacApiClient` — login, request signing, all confirmed endpoint calls |
 | [`const.py`](../custom_components/renac_wallbox/const.py) | Domain, base URL, signing salt, response codes, confirmed enums |
-| [`coordinator.py`](../custom_components/renac_wallbox/coordinator.py) | `DataUpdateCoordinator` polling `api/charging/index` (2.4) every 30s (configurable) |
+| [`coordinator.py`](../custom_components/renac_wallbox/coordinator.py) | `RenacWallboxCoordinator` polls `api/charging/index` (2.4) every 30s (configurable); `RenacSettingsCoordinator` polls `api/charging/basic|fast|pv|off-peak` (2.10) every 5 minutes, best-effort (a failed group doesn't block setup) |
 | [`config_flow.py`](../custom_components/renac_wallbox/config_flow.py) | UI setup: base URL + email + password → pick station → pick device |
-| [`sensor.py`](../custom_components/renac_wallbox/sensor.py) | One entity per confirmed field (power, voltage, current, energy, cost, state, mode, phase, limits) |
+| [`sensor.py`](../custom_components/renac_wallbox/sensor.py) | One entity per confirmed realtime field (power, voltage, current, energy, cost, state, phase, max power limit) |
 | [`binary_sensor.py`](../custom_components/renac_wallbox/binary_sensor.py) | `fault` binary sensor (`state2 == 5`) |
-| [`number.py`](../custom_components/renac_wallbox/number.py) | `max_current_limit` — read/write `max_output_cur` via `api/charging/basic` / `api/charging/set` (2.10); ⚠️ write path not yet live-tested |
+| [`number.py`](../custom_components/renac_wallbox/number.py) | 9 numeric read/write entities: max current limit (realtime-backed), protect temp, meter address, PV min. solar power, PV/off-peak/fast energy targets, fast cost target (all settings-backed, 2.10) |
+| [`select.py`](../custom_components/renac_wallbox/select.py) | 5 enum read/write entities: overall charge mode (realtime-backed), charge authorization, external current sampling, PV boost mode, fast charge plan (all settings-backed, 2.10) |
+| [`switch.py`](../custom_components/renac_wallbox/switch.py) | 3 boolean read/write entities: PV grid import, off-peak boost, load balance enable (2.10) |
+| [`time.py`](../custom_components/renac_wallbox/time.py) | 9 HH:mm read/write entities: allowed charging window, fast/PV/off-peak schedule times (2.10) |
 | [`manifest.json`](../custom_components/renac_wallbox/manifest.json), [`strings.json`](../custom_components/renac_wallbox/strings.json), [`translations/`](../custom_components/renac_wallbox/translations/) | HA metadata + EN/CZ config-flow and entity translations |
 
 One config entry = one wallbox device (`inv_sn`). Multi-wallbox accounts add the integration once per device (the config flow walks you through picking the station and device if there is more than one).
@@ -394,8 +395,8 @@ Kompletní reverzně odvozená dokumentace cloudového API RENAC použitého v [
 | `api/station/equipStat` | ✅ Ověřeno (reálný zachycený provoz) |
 | `api/charging/equ/charging_record` (historie nabíjecích relací) | ✅ Ověřeno (reálný zachycený provoz) |
 | `api/charging/equ/detailChart` (časová řada historie) | ✅ Ověřeno (reálný zachycený provoz) |
-| `api/charging/basic` (čtení nastavení vč. max. proudu) | ⚠️ Odvozeno z dekompilovaného JS (skutečný kód sestavující požadavek, ne odhad tvaru), nezachyceno naživo — viz §2.10 |
-| `api/charging/set` typ=2 (zápis max. proudu a dalších nastavení) | ⚠️ Implementováno (`number.*_max_current_limit`), odvozeno z dekompilovaného JS, otestováno proti Docker mock serveru, zatím ne na reálném účtu — viz §2.10 |
+| `api/charging/basic\|fast\|pv\|off-peak` (čtení nastavení) | ⚠️ Odvozeno z dekompilovaného JS (skutečný kód sestavující požadavek, ne odhad tvaru), nezachyceno naživo — viz §2.10 |
+| `api/charging/set` všech 6 hodnot `type` (zápis nastavení vč. max. proudu) | ⚠️ 24 entit implementováno napříč `number`/`select`/`switch`/`time`, odvozeno z dekompilovaného JS, otestováno proti Docker mock serveru (kompletní cyklus čtení/zápis, bez chyb), zatím ne na reálném účtu — viz §2.10 |
 | Integrace Home Assistant (`custom_components/renac_wallbox/`) | ✅ Čtecí část otestována end-to-end na reálném wallboxu RENAC EV-AC3P-11K přes celý instalační postup HACS; nová zápisová část (max. proud) zatím jen v Docker mocku, ne naživo (viz §5) |
 | Jiné regiony než Evropa | ⚠️ Vzor základní URL je pouze odhadnut, neověřeno |
 
@@ -641,46 +642,44 @@ Napětí/proud po jednotlivých fázích je dostupné **pouze** přes tento endp
 
 Extrahováno z tabulky rout v JS, uvedeno pro úplnost / budoucí rozšíření: `api/station/weather`, `api/charging/fast`, `api/charging/pv`, `api/charging/off-peak`, `api/charging/equ/detail` (ověřeno dekompilací kódu, že vrací další metadata zařízení: `model`, `rated_power`, `reg_time`, `version`, po fázích `charger_vol_a/b/c`, `charger_cur_a/b/c` — zatím nezapojeno do integrace), `api/charging/equ/detailChart/export`, `api/user/info`, `api/user/changePwd`, `api/com/getWebVer`.
 
-### 2.10 `POST api/charging/basic` (čtení) a `POST api/charging/set` typ=2 (zápis) — nastavení wallboxu vč. max. proudu ⚠️ odvozeno z dekompilovaného JS, nezachyceno naživo
+### 2.10 `api/charging/basic|fast|pv|off-peak` (čtení) a `api/charging/set` (zápis) — kompletní nastavení wallboxu ⚠️ odvozeno z dekompilovaného JS, nezachyceno naživo
 
-Na rozdíl od každého jiného endpointu v tomto dokumentu tyto dva **nebyly** potvrzeny sledováním reálného síťového požadavku — akce změny nastavení není ve webovém portálu dosažitelná bez navigace do konkrétní obrazovky nastavení zařízení, na kterou čerstvý účet/relace defaultně nedojde, a HAR záznam takové akce zatím neexistuje. Místo toho byl přímo dohledán a přečten skutečný kód sestavující požadavek: komponenta formuláře nastavení (`chunk-184c83ca`, modul `fb3b`, dekompilováno — název samotné komponenty minifikátor nezachovává) navazuje `el-input-number` s popiskem "Max output current (A)" na `basic.max_output_cur`, a handler `setMode(2)` jejího tlačítka Uložit porovná formulář s posledně načteným stavem a odešle přesně jen změněné názvy polí/hodnoty. To je silnější důkaz než odhadnutý tvar URL+parametrů (jde o doslovný kód, který požadavek sestavuje), ale nebylo to vyzkoušeno proti reálnému API — **než se na to spolehnete, otestujte to opatrně, na wallboxu, kde neočekávaný limit proudu není bezpečnostní problém.**
+Na rozdíl od každého jiného endpointu v tomto dokumentu celá tato sekce **nebyla** potvrzena sledováním reálného síťového požadavku — nastavovací UI není ve webovém portálu dosažitelné bez navigace do konkrétní obrazovky nastavení zařízení, na kterou čerstvý účet/relace defaultně nedojde, a HAR záznam takové akce zatím neexistuje. Místo toho byl přímo a kompletně dohledán a přečten skutečný kód sestavující požadavky: komponenta formuláře nastavení (Vue komponenta `SetPile`, v `chunk-184c83ca` modulu `fb3b`, dekompilováno) má jedno `data.pole` na každý vstup, a handler `setMode(t)` každého tlačítka Uložit porovná pole své záložky s posledně načteným stavem a odešle přesně to, co se změnilo, přes `POST api/charging/set`. To je silnější důkaz než odhadnutý tvar URL+parametrů (jde o doslovný kód, který požadavek sestavuje), ale nebylo to vyzkoušeno proti reálnému API kromě `max_output_cur` — **než se na cokoli z toho spolehnete, otestujte to opatrně, na wallboxu, kde neočekávané nastavení není bezpečnostní problém.** Vše níže **bylo** ověřeno end-to-end proti Docker mock serveru (`docker-compose.test.yml`) — zápis přes `number`/`select`/`switch`/`time` spolehlivě vyprodukuje přesně zdokumentovaný payload a odrazí se zpět při dalším čtení.
 
-**Čtení** — `POST api/charging/basic`:
-```json
-{ "inv_sn": "ABC0123456DEF789" }
-```
-Odpověď (`data`), názvy polí přečtené přímo z metody `readBasic()` (`Object(o["X"])(...)`, kde export `"X"` je navázán na stejnou wrapper funkci `api/charging/basic`, nalezenou stejnou technikou statické analýzy jako oprava `bg/equList` v §2.5):
-```json
-{
-  "charing_mode": 1,
-  "rfid": "",
-  "max_output_cur": 7,
-  "protect_temp": 85,
-  "max_input_power": 22000,
-  "allow_charging_time_begin": "00:00",
-  "allow_charging_time_end": "23:59",
-  "external_cur_sampling": 0,
-  "meter_address": 1,
-  "rate_number": 0
-}
-```
-Všimněte si, že `charing_mode` je vlastní pravopis SPA (chybí "g") — reprodukujte to doslovně, téměř jistě je to přesně to, co server očekává. `rate_number` udává, kolik položek tarifu časového pásma následuje jako `rate{N}_time_begin` / `rate{N}_time_end` / `rate{N}_rate` pro `N` v rozsahu `1..rate_number` (výše nejsou zobrazeny, protože tento vzorek žádné nemá nastavené). Hodnoty výše **nejsou z reálného zachyceného provozu** — byly sestaveny z názvů polí a plausibilních výchozích hodnot, ne anonymizovaná reálná data jako všude jinde v tomto dokumentu.
+#### Čtení
 
-**Zápis** — `POST api/charging/set`:
+Čtyři sesterské endpointy, každý `{"inv_sn": "<sériové číslo>"}` na vstupu, ověřené názvy polí na výstupu (`readBasic()`/`readFast()`/`readPv()`/`readOffPeak()`):
+
+| Endpoint | Pole `data` |
+|---|---|
+| `POST api/charging/basic` | `charing_mode` (int; vlastní pravopis SPA, chybí "g" — reprodukujte doslovně), `rfid`, `max_output_cur` (A), `protect_temp` (°C), `max_input_power`, `allow_charging_time_begin`/`_end` ("HH:mm"), `external_cur_sampling`, `meter_address`, `rate_number`, a `rate{N}_time_begin`/`_end`/`_rate` pro `N` v `1..rate_number` (rozvrh tarifu časového pásma) |
+| `POST api/charging/fast` | `mode` (0=přednastavený čas/1=energie/2=náklady), `time_number` (minuty), `time_begintime`, `time_day`, `energy_number` (kWh), `energy_begintime`, `energy_day`, `cost_number`, `cost_begintime`, `cost_day` |
+| `POST api/charging/pv` | `import_grid` (0/1), `min_solar_power` (0–22000 W), `boost` (0=vypnuto/1=ruční/2=inteligentní), `manual_energy` (kWh), `start_time`, `stop_time`, `auto_time`, `auto_energy` (kWh) |
+| `POST api/charging/off-peak` | `boost` (0/1), `peak_time` (čárkou oddělené 0/1 příznaky, jeden na nakonfigurovaný tarifní slot z `api/charging/basic`), `auto_time`, `auto_energy` (kWh), `balance` (0/1, vyvažování zátěže), `balance_power` (W) |
+
+Pole `*_begintime` používají sentinel `"255:255"` pro "žádný naplánovaný start / nabíjet ihned po připojení" místo skutečného času — nastavuje ho přepínač "připojit a nabíjet" ve webovém formuláři. Vzorové hodnoty v každé fixture (`tests/fixtures/renac_api/charging_{basic,fast,pv,off_peak}.json`) **nejsou z reálného zachyceného provozu** — byly sestaveny z názvů polí a plausibilních výchozích hodnot, ne anonymizovaná reálná data jako všude jinde v tomto dokumentu.
+
+#### Zápis — `POST api/charging/set`
+
 ```json
 { "equ_sn": "ABC0123456DEF789", "type": 2, "ids": "max_output_cur", "params": "16" }
 ```
-Odpověď: standardní obálka `{"code": 1, ...}` bez smysluplných `data`.
+Odpověď: standardní obálka `{"code": 1, ...}` bez smysluplných `data`. `ids`/`params` jsou paralelní seznamy oddělené čárkou — jedním voláním lze změnit více polí najednou. Čísla musí být formátována stejně, jako by je převedl na řetězec samotný JS (`16`, ne `16.0`) — `RenacApiClient.async_set_charging` to ošetřuje.
 
-`ids` a `params` jsou paralelní seznamy oddělené čárkou — jedním voláním lze změnit více polí najednou, např. `"ids": "max_output_cur,protect_temp", "params": "16,90"`. Zahrnujte pouze pole, která se skutečně změnila (tak to dělá i SPA samo, porovnáním proti poslednímu stavu z `readBasic()` — nepotvrzeno jako tvrdý požadavek, ale nejbezpečnější to dodržet). Čísla musí být formátována stejně, jako by je převedl na řetězec samotný JS (`16`, ne `16.0`) — `RenacApiClient.async_set_charging_basic` to ošetřuje.
+Každá hodnota `type` pozorovaná v `setMode()`, kam zapisuje, a stav ověření:
 
-V téže metodě `setMode()` byly pro úplnost pozorovány i dvě další hodnoty `type` (**neimplementováno, netestováno naživo**):
-- `type: 1` — změna RFID karty: `{"equ_sn": "...", "type": 1, "ids": "rfid", "params": "<číslo karty>"}`.
-- `type: 3` — přepnutí aktivní záložky režimu nabíjení (rychlé/PV/nízký tarif): `{"equ_sn": "...", "type": 3, "ids": "charger_mode", "params": "<0|1|2>"}`, odpovídá výčtu `mode` z §2.4/const.py.
+| `type` | Skupina | Pole | Důvěra HA entity |
+|---|---|---|---|
+| 1 | RFID | `rfid` | Neimplementováno jako entita (citlivé z hlediska bezpečnosti, nízká hodnota) |
+| 2 | Základní | `charing_mode`, `max_output_cur`, `protect_temp`, `max_input_power`, `allow_charging_time_begin`/`_end`, `external_cur_sampling`, `meter_address`, `rate{N}_*` | `max_output_cur` implementováno (`number.*_max_current_limit`); `charing_mode`→`select.*_charge_authorization`, `protect_temp`→`number.*_protect_temperature`, `meter_address`→`number.*_meter_address`, `external_cur_sampling`→`select.*_external_current_sampling`, `allow_charging_time_begin`/`_end`→`time.*` vše implementováno. `max_input_power` a rozvrh tarifu `rate{N}_*` **nejsou** implementovány (druhé jmenované potřebuje UI se seznamem slotů, pro které HA nemá čistou vestavěnou entitu) |
+| 3 | Celkový režim | `charger_mode` (0=fast/1=pv/2=off_peak) | Implementováno: `select.*_charge_mode` (čte reálné pole `mode` z `api/charging/index`, zapisuje typ=3) |
+| 4 | Plán rychlého nabíjení | `mode` (0/1/2) + odpovídající trojice `time_*`/`energy_*`/`cost_*` | `mode`→`select.*_fast_charge_plan`, `energy_number`→`number.*_fast_charge_energy_target`, `cost_number`→`number.*_fast_charge_cost_target`, všechny tři `*_begintime`→`time.*` implementováno. `time_number` (délka trvání, ne čas na hodinách) **není** implementováno |
+| 5 | PV/solární boost | `import_grid`, `min_solar_power`, `boost` (0/1/2), + `manual_energy`/`start_time`/`stop_time` (boost=1) nebo `auto_time`/`auto_energy` (boost=2) | Všechna pole implementována napříč `switch.*_pv_allow_grid_import`, `number.*_pv_min_solar_power`, `select.*_pv_boost_mode`, `number.*_pv_manual_boost_energy_target`, `number.*_pv_intelligent_boost_energy_target` a čtyřmi entitami `time.*` |
+| 6 | Rozvrh nízkého tarifu **a** vyvažování zátěže (sdílené `type`, rozlišené jen podle `ids`) | Nízký tarif: `boost`, `peak_time`, `auto_time`, `auto_energy`. Vyvažování: `balance`, `balance_power` | `boost`→`switch.*_off_peak_boost`, `auto_time`→`time.*_off_peak_boost_end`, `auto_energy`→`number.*_off_peak_boost_energy_target`, `balance`→`switch.*_load_balance`, `balance_power`→`number.*_load_balance_power` implementováno. `peak_time` (výběr tarifu po slotech, potřebuje rozvrh `rate{N}_*` z typu 2) **není** implementováno |
 
-Další pole `basic`, která se zdají být nastavitelná přes `type: 2` spolu s `max_output_cur`, podle stejného diffovacího kódu, ale zatím nejsou vystavena jako HA entity: `charing_mode`, `protect_temp`, `max_input_power`, `allow_charging_time_begin`/`_end`, `external_cur_sampling`, `meter_address` a rozvrh tarifu `rate{N}_*`.
+**Poznámka k částečným zápisům:** SPA vždy odešle celou záložku polí najednou (např. změna PV režimu znovu odešle `import_grid`+`min_solar_power`+`boost`, i když se změnilo jen jedno). Tato integrace místo toho posílá při zápisu z každé entity přesně jedno pole, na základě předpokladu — potvrzeného pouze pro `type 1`/`rfid`, které SPA samo vždy posílá samostatně — že API přijímá částečné sady polí podle `type`. To při testu proti Docker mocku (který jednoduše aplikuje jakákoli `ids` dostane) nebyl problém, ale reálný účet se může chovat jinak; pokud zápis jednoho pole u typu 4/5/6 neprojeví efekt, zkuste `RenacApiClient.async_set_charging()` se všemi poli té záložky najednou.
 
-**Integrace Home Assistant:** `number.<zařízení>_max_current_limit` (`custom_components/renac_wallbox/number.py`) čte/zapisuje `max_output_cur` přes `RenacApiClient.async_set_max_current()`. Meze min/max (6–32 A) jsou konzervativní odhad, ne RENAC-potvrzený hardwarový rozsah — upravte `MIN_CURRENT_A`/`MAX_CURRENT_A` v `number.py`, pokud se reálný rozsah vašeho zařízení liší. Ověřeno end-to-end proti Docker mock serveru (celý cyklus: nastavení hodnoty → volání `api/charging/set` s přesně výše uvedeným payloadem → mock to odrazí zpět → obnovení coordinatoru → entita ukáže novou hodnotu), ale **zatím ne proti reálnému účtu** — udělejte to, než to budete považovat za plně ověřené, a aktualizujte tuto sekci (a stavovou tabulku v §1).
+**Integrace Home Assistant:** viz tabulka souborů v §3 — `number.py`, `select.py`, `switch.py` a `time.py` dohromady implementují 24 entit pro čtení/zápis napříč všemi šesti hodnotami `type`, napojených na nový `RenacSettingsCoordinator` (`coordinator.py`), který dotazuje `api/charging/basic|fast|pv|off-peak` každých 5 minut (`SETTINGS_SCAN_INTERVAL` v `const.py`) — mnohem pomaleji než reálný 30s poll, protože se tyto hodnoty mění zřídka a jde o neověřené zápisové endpointy. Selhání načtení jedné skupiny nastavení se zaloguje a entity té skupiny prostě přejdou do stavu `unavailable`, místo aby zablokovaly nastavení ověřených čtecích senzorů. `max_current_limit` a nové `select.*_charge_mode` jsou dvě výjimky: čtou z reálného coordinatoru místo toho (rychlejší zpětná vazba po zápisu, a `charge_mode` navíc není součástí žádné odpovědi `charging/basic|fast|pv|off-peak`). **Nic z toho nebylo otestováno na reálném účtu** — udělejte to (začněte něčím nízkorizikovým jako `meter_address` nebo `select`, než čímkoli souvisejícím s proudem/výkonem), než to budete považovat za plně ověřené, a aktualizujte tuto sekci a stavovou tabulku v §1.
 
 ---
 
@@ -692,11 +691,14 @@ Kód je v [`custom_components/renac_wallbox/`](../custom_components/renac_wallbo
 |---|---|
 | [`api.py`](../custom_components/renac_wallbox/api.py) | `RenacApiClient` — přihlášení, podepisování požadavků, všechna ověřená volání endpointů |
 | [`const.py`](../custom_components/renac_wallbox/const.py) | Doména, základní URL, salt pro podpis, kódy odpovědí, ověřené výčty |
-| [`coordinator.py`](../custom_components/renac_wallbox/coordinator.py) | `DataUpdateCoordinator` dotazující `api/charging/index` (2.4) každých 30 s (nastavitelné) |
+| [`coordinator.py`](../custom_components/renac_wallbox/coordinator.py) | `RenacWallboxCoordinator` dotazuje `api/charging/index` (2.4) každých 30 s (nastavitelné); `RenacSettingsCoordinator` dotazuje `api/charging/basic|fast|pv|off-peak` (2.10) každých 5 minut, best-effort (selhání jedné skupiny neblokuje nastavení) |
 | [`config_flow.py`](../custom_components/renac_wallbox/config_flow.py) | UI nastavení: základní URL + e-mail + heslo → výběr stanice → výběr zařízení |
-| [`sensor.py`](../custom_components/renac_wallbox/sensor.py) | Jedna entita na ověřené pole (výkon, napětí, proud, energie, náklady, stav, režim, fáze, limity) |
+| [`sensor.py`](../custom_components/renac_wallbox/sensor.py) | Jedna entita na ověřené reálné pole (výkon, napětí, proud, energie, náklady, stav, fáze, limit výkonu) |
 | [`binary_sensor.py`](../custom_components/renac_wallbox/binary_sensor.py) | Binární senzor `fault` (`state2 == 5`) |
-| [`number.py`](../custom_components/renac_wallbox/number.py) | `max_current_limit` — čtení/zápis `max_output_cur` přes `api/charging/basic` / `api/charging/set` (2.10); ⚠️ zápisová cesta zatím netestována naživo |
+| [`number.py`](../custom_components/renac_wallbox/number.py) | 9 číselných entit pro čtení/zápis: limit max. proudu (napojen na reálný coordinator), ochranná teplota, adresa elektroměru, PV min. solární výkon, cíle energie PV/nízký tarif/rychlé nabíjení, cíl nákladů rychlého nabíjení (vše napojeno na settings, 2.10) |
+| [`select.py`](../custom_components/renac_wallbox/select.py) | 5 výčtových entit pro čtení/zápis: celkový režim nabíjení (napojen na reálný coordinator), autorizace nabíjení, externí snímání proudu, režim PV boostu, plán rychlého nabíjení (vše napojeno na settings, 2.10) |
+| [`switch.py`](../custom_components/renac_wallbox/switch.py) | 3 boolean entity pro čtení/zápis: PV odběr ze sítě, boost v nízkém tarifu, vyvažování zátěže (2.10) |
+| [`time.py`](../custom_components/renac_wallbox/time.py) | 9 entit HH:mm pro čtení/zápis: povolené okno nabíjení, časy rozvrhu rychlého/PV/nízkotarifního nabíjení (2.10) |
 | [`manifest.json`](../custom_components/renac_wallbox/manifest.json), [`strings.json`](../custom_components/renac_wallbox/strings.json), [`translations/`](../custom_components/renac_wallbox/translations/) | Metadata HA + CZ/EN překlady config flow a entit |
 
 Jeden config entry = jedno zařízení wallbox (`inv_sn`). Pro účty s více wallboxy přidejte integraci vícekrát, jednou na zařízení (config flow vás provede výběrem stanice a zařízení, pokud je jich víc).

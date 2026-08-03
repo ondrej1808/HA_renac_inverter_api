@@ -46,12 +46,26 @@ class FakeRenacServer:
         self.app.router.add_post("/api/station/list", self.station_list)
         self.app.router.add_post("/api/charging/index", self.charging_index)
         self.app.router.add_post("/api/charging/basic", self.charging_basic)
+        self.app.router.add_post("/api/charging/fast", self.charging_fast)
+        self.app.router.add_post("/api/charging/pv", self.charging_pv)
+        self.app.router.add_post("/api/charging/off-peak", self.charging_off_peak)
         self.app.router.add_post("/api/charging/set", self.charging_set)
         self.app.router.add_post("/bg/equList", self.equ_list)
         self.app.router.add_post("/api/station/equipStat", self.equip_stat)
         self.charging_index_state = load_fixture("charging_index.json")["data"]
         self.charging_basic_state = load_fixture("charging_basic.json")["data"]
+        self.charging_fast_state = load_fixture("charging_fast.json")["data"]
+        self.charging_pv_state = load_fixture("charging_pv.json")["data"]
+        self.charging_off_peak_state = load_fixture("charging_off_peak.json")["data"]
         self.set_calls: list[dict] = []
+        self._set_type_state = {
+            1: self.charging_basic_state,
+            2: self.charging_basic_state,
+            3: self.charging_index_state,
+            4: self.charging_fast_state,
+            5: self.charging_pv_state,
+            6: self.charging_off_peak_state,
+        }
 
     async def _check_signature(self, request: web.Request) -> None:
         token = request.headers.get("Token")
@@ -82,15 +96,39 @@ class FakeRenacServer:
         await self._check_signature(request)
         return web.json_response({"code": 1, "msg": "0000", "data": self.charging_basic_state})
 
+    async def charging_fast(self, request: web.Request) -> web.Response:
+        self.received_paths.append(request.path)
+        await self._check_signature(request)
+        return web.json_response({"code": 1, "msg": "0000", "data": self.charging_fast_state})
+
+    async def charging_pv(self, request: web.Request) -> web.Response:
+        self.received_paths.append(request.path)
+        await self._check_signature(request)
+        return web.json_response({"code": 1, "msg": "0000", "data": self.charging_pv_state})
+
+    async def charging_off_peak(self, request: web.Request) -> web.Response:
+        self.received_paths.append(request.path)
+        await self._check_signature(request)
+        return web.json_response({"code": 1, "msg": "0000", "data": self.charging_off_peak_state})
+
     async def charging_set(self, request: web.Request) -> web.Response:
         self.received_paths.append(request.path)
         await self._check_signature(request)
         body = await request.json()
         self.set_calls.append(body)
+        state = self._set_type_state[body["type"]]
         for field, value in zip(body["ids"].split(","), body["params"].split(",")):
-            self.charging_basic_state[field] = value
+            try:
+                value = float(value)
+                if value.is_integer():
+                    value = int(value)
+            except ValueError:
+                pass
+            state[field] = value
             if field == "max_output_cur":
                 self.charging_index_state["max_cur"] = value
+            if field == "charger_mode":
+                self.charging_index_state["mode"] = value
         return web.json_response({"code": 1, "msg": "0000", "data": None})
 
     async def equ_list(self, request: web.Request) -> web.Response:
@@ -193,7 +231,67 @@ async def test_set_max_current_sends_expected_payload(server):
     # And the mock reflects it back on subsequent reads, same as the
     # real API would after a successful write.
     status = await api.async_get_wallbox_status("ABC0123456DEF789")
-    assert status["max_cur"] == "16"
+    assert status["max_cur"] == 16
+
+
+async def test_get_charging_fast_pv_off_peak(server):
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    await api.async_login()
+
+    fast = await api.async_get_charging_fast("ABC0123456DEF789")
+    assert fast["mode"] == 0
+    assert fast["time_begintime"] == "22:00"
+
+    pv = await api.async_get_charging_pv("ABC0123456DEF789")
+    assert pv["min_solar_power"] == 8000
+
+    off_peak = await api.async_get_charging_off_peak("ABC0123456DEF789")
+    assert off_peak["balance_power"] == 0
+
+
+async def test_set_charger_mode_sends_expected_payload(server):
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    await api.async_login()
+    await api.async_set_charger_mode("ABC0123456DEF789", 1)
+
+    assert server.fake.set_calls[-1] == {
+        "equ_sn": "ABC0123456DEF789",
+        "type": 3,
+        "ids": "charger_mode",
+        "params": "1",
+    }
+    status = await api.async_get_wallbox_status("ABC0123456DEF789")
+    assert status["mode"] == 1
+
+
+async def test_set_pv_settings_sends_expected_payload(server):
+    """type=5, multi-field write in one call (import_grid + min_solar_power)."""
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    await api.async_login()
+    await api.async_set_charging(
+        "ABC0123456DEF789", 5, {"import_grid": 1, "min_solar_power": 6000}
+    )
+
+    assert server.fake.set_calls[-1] == {
+        "equ_sn": "ABC0123456DEF789",
+        "type": 5,
+        "ids": "import_grid,min_solar_power",
+        "params": "1,6000",
+    }
+    pv = await api.async_get_charging_pv("ABC0123456DEF789")
+    assert pv["min_solar_power"] == 6000
+
+
+async def test_set_off_peak_load_balance_shares_type_6(server):
+    """type=6 is shared between off-peak schedule and load-balance
+    fields (README §2.10) -- confirms both write into the same group."""
+    api = RenacApiClient(server.session, str(server.make_url("")), "test@example.com", "x")
+    await api.async_login()
+    await api.async_set_charging("ABC0123456DEF789", 6, {"balance": 1, "balance_power": 5000})
+
+    off_peak = await api.async_get_charging_off_peak("ABC0123456DEF789")
+    assert off_peak["balance"] == 1
+    assert off_peak["balance_power"] == 5000
 
 
 async def test_requests_are_actually_signed(server):

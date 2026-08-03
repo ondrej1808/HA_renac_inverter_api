@@ -1,0 +1,17 @@
+{
+  "code": 1,
+  "msg": "0000",
+  "data": {
+    "inv_sn": "ABC0123456DEF789",
+    "mode": 0,
+    "time_number": 480,
+    "time_begintime": "22:00",
+    "time_day": 0,
+    "energy_number": 90,
+    "energy_begintime": "255:255",
+    "energy_day": 0,
+    "cost_number": 0,
+    "cost_begintime": null,
+    "cost_day": 0
+  }
+}

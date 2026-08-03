@@ -88,7 +88,9 @@ This repository is a valid **HACS custom repository** (see [`hacs.json`](hacs.js
 
 Polling interval defaults to 30s and can be changed afterwards via the integration's **Configure** (options flow), 10–3600s.
 
-**What you get:** power (W), voltage (V), current (A), total energy (kWh), session energy (kWh), total cost, session cost, session duration, state (`idle`/`plugged_in`/`charging`/`fault`), mode (`fast`/`pv`/`off_peak`), phase (`single_phase`/`three_phase`), max power limit, PV minimum solar power threshold (diagnostic), plus a `problem` binary sensor for fault state — and an **editable max current limit** (`number.*_max_current_limit`, 6–32 A) you can set directly from Home Assistant. ⚠️ The write path was derived from decompiled JS and tested against a mock server, not yet against a real account — see [docs/API.md §2.10](docs/API.md) before relying on it.
+**Read-only sensors** (confirmed against real hardware): power (W), voltage (V), current (A), total energy (kWh), session energy (kWh), total cost, session cost, session duration, state (`idle`/`plugged_in`/`charging`/`fault`), phase (`single_phase`/`three_phase`), max power limit, PV minimum solar power threshold (diagnostic), plus a `problem` binary sensor for fault state.
+
+**Editable settings** — 24 more entities across `number`/`select`/`switch`/`time` (max current, protect temperature, meter address, charge mode, PV boost, off-peak schedule, load balancing, fast-charge schedule, and more). ⚠️ These were derived from decompiled JS and tested end-to-end against a mock server (no errors, correct payloads confirmed) but **not yet against a real account** — see the full field-by-field table in [docs/API.md §2.10](docs/API.md) before relying on them, and start with something low-risk (like the meter address) rather than current/power settings.
 
 **Security, in short:** the RENAC login endpoint accepts a plaintext password over HTTPS (no client-side hashing to preserve). This integration only ever *reads* data — it never writes to `api/charging/set` or any other control endpoint. See [docs/API.md §4.1](docs/API.md) for the full write-up.
 
@@ -189,7 +191,9 @@ Tento repozitář je platný **vlastní (custom) repozitář HACS** (viz [`hacs.
 
 Výchozí interval dotazování je 30 s, lze změnit později přes **Konfigurovat** u integrace (options flow), v rozsahu 10–3600 s.
 
-**Co dostanete:** výkon (W), napětí (V), proud (A), celková energie (kWh), energie relace (kWh), celkové náklady, náklady relace, doba trvání relace, stav (`idle`/`plugged_in`/`charging`/`fault`), režim (`fast`/`pv`/`off_peak`), fáze (`single_phase`/`three_phase`), limit max. výkonu, PV práh minimálního solárního výkonu (diagnostický), plus binární senzor `problem` pro stav poruchy — a **editovatelný limit max. proudu** (`number.*_max_current_limit`, 6–32 A), který můžete nastavit přímo z Home Assistant. ⚠️ Zápisová cesta byla odvozena z dekompilovaného JS a otestována proti mock serveru, zatím ne proti reálnému účtu — viz [docs/API.md §2.10](docs/API.md), než se na ni spolehnete.
+**Pouze ke čtení senzory** (ověřeno na reálném hardwaru): výkon (W), napětí (V), proud (A), celková energie (kWh), energie relace (kWh), celkové náklady, náklady relace, doba trvání relace, stav (`idle`/`plugged_in`/`charging`/`fault`), fáze (`single_phase`/`three_phase`), limit max. výkonu, PV práh minimálního solárního výkonu (diagnostický), plus binární senzor `problem` pro stav poruchy.
+
+**Editovatelná nastavení** — 24 dalších entit napříč `number`/`select`/`switch`/`time` (max. proud, ochranná teplota, adresa elektroměru, režim nabíjení, PV boost, rozvrh nízkého tarifu, vyvažování zátěže, plán rychlého nabíjení a další). ⚠️ Byla odvozena z dekompilovaného JS a otestována end-to-end proti mock serveru (bez chyb, správný payload potvrzen), ale **zatím ne proti reálnému účtu** — kompletní tabulku pole po poli najdete v [docs/API.md §2.10](docs/API.md), než se na ně spolehnete, a začněte něčím nízkorizikovým (třeba adresou elektroměru), ne nastavením proudu/výkonu.
 
 **Bezpečnost ve zkratce:** přihlašovací endpoint RENAC přijímá heslo v čistém textu přes HTTPS (na klientovi není žádné hashování, které by bylo třeba zachovat). Tato integrace pouze *čte* data — nikdy nezapisuje do `api/charging/set` ani jiného řídicího endpointu. Kompletní rozbor viz [docs/API.md §4.1](docs/API.md).
 
