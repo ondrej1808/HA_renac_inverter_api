@@ -96,7 +96,7 @@ Polling interval defaults to 10s and can be changed afterwards -- either as a `n
 
 **Security, in short:** the RENAC login endpoint accepts a plaintext password over HTTPS (no client-side hashing to preserve). This integration does write to your wallbox now (charging on/off is live-confirmed; the other 24 settings entities are not yet) — see [docs/API.md §2.10–2.11](docs/API.md) for exactly what each write does and its confidence level before flipping anything current/power-related.
 
-**Dashboard tip:** Home Assistant's default device view always groups entities by domain (sensors, then numbers, then selects, then switches...), so e.g. the `Charging` switch can never sit next to `Max current limit`. [`docs/examples/wallbox-dashboard-card.yaml`](docs/examples/wallbox-dashboard-card.yaml) is a ready-to-paste custom card (Add Card → Manual) that groups the controls and key sensors under one titled card in whatever order you want.
+**Dashboard tip:** Home Assistant's default device view always groups entities by domain (sensors, then numbers, then selects, then switches...), so e.g. the `Charging` switch can never sit next to `Max current limit`. The integration handles this for you automatically: right after setup it writes a ready-to-paste custom card — with **your own device's real entity IDs already filled in** — to `renac_wallbox_dashboard_<serial>.yaml` in your Home Assistant config folder, and shows a one-time notification telling you where to find it. Open any dashboard → **Edit Dashboard** → **Add Card** → **Manual**, and paste the file's contents. (See [`docs/examples/wallbox-dashboard-card.yaml`](docs/examples/wallbox-dashboard-card.yaml) for a sanitized preview of what it looks like.)
 
 ## License
 
@@ -203,7 +203,7 @@ Výchozí interval dotazování je 10 s, lze změnit později — buď přímo e
 
 **Bezpečnost ve zkratce:** přihlašovací endpoint RENAC přijímá heslo v čistém textu přes HTTPS (na klientovi není žádné hashování, které by bylo třeba zachovat). Tato integrace už do wallboxu i zapisuje (zapnutí/vypnutí nabíjení je ověřeno naživo; zbylých 24 nastavovacích entit zatím ne) — přesně co který zápis dělá a jak moc je ověřený viz [docs/API.md §2.10–2.11](docs/API.md), než budete přepínat cokoliv souvisejícího s proudem/výkonem.
 
-**Tip na dashboard:** výchozí zobrazení zařízení v Home Assistant vždy řadí entity podle domény (nejdřív senzory, pak čísla, pak výběry, pak přepínače...), takže třeba přepínač `Charging` nikdy nebude vedle `Max current limit`. [`docs/examples/wallbox-dashboard-card.yaml`](docs/examples/wallbox-dashboard-card.yaml) je hotová karta k vložení (Přidat kartu → Ruční), která seskupí ovládání a klíčové senzory pod jeden pojmenovaný blok v pořadí, jaké chcete.
+**Tip na dashboard:** výchozí zobrazení zařízení v Home Assistant vždy řadí entity podle domény (nejdřív senzory, pak čísla, pak výběry, pak přepínače...), takže třeba přepínač `Charging` nikdy nebude vedle `Max current limit`. O to se integrace postará sama: hned po nastavení zapíše hotovou kartu k vložení — **s už doplněnými reálnými entity ID vašeho zařízení** — do souboru `renac_wallbox_dashboard_<sériové_číslo>.yaml` ve vaší konfigurační složce Home Assistant a zobrazí jednorázové upozornění, kde ho najít. Otevřete kterýkoli dashboard → **Upravit dashboard** → **Přidat kartu** → **Ruční**, a vložte obsah souboru. (Náhled, jak vypadá, viz [`docs/examples/wallbox-dashboard-card.yaml`](docs/examples/wallbox-dashboard-card.yaml).)
 
 ## Licence
 

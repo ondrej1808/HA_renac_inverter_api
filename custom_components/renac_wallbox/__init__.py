@@ -1,6 +1,7 @@
 """The RENAC Wallbox integration."""
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -16,6 +17,9 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import RenacSettingsCoordinator, RenacWallboxCoordinator
+from .dashboard import async_generate_dashboard_card
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -54,6 +58,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
+    try:
+        await async_generate_dashboard_card(hass, entry, entry.data[CONF_INV_SN])
+    except Exception:  # noqa: BLE001 - never let a nice-to-have block setup
+        _LOGGER.warning("Failed to generate dashboard card file", exc_info=True)
+
     return True
 
 
